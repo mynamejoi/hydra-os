@@ -1,0 +1,44 @@
+{
+ "contract": "layout/v1",
+ "blocks": [
+  {
+   "id": "header",
+   "type": "header",
+   "width": "full",
+   "fixed": true
+  },
+  {
+   "id": "goals",
+   "type": "goals",
+   "width": "full",
+   "fixed": true
+  },
+  {
+   "id": "today",
+   "type": "today",
+   "width": "full",
+   "title": "Your last 14 days",
+   "data": "today"
+  },
+  {
+   "id": "food",
+   "type": "chart",
+   "width": "full",
+   "title": "Food and drink",
+   "data": "food",
+   "entry": "log-meal"
+  },
+  {
+   "id": "questions",
+   "type": "questions",
+   "width": "full",
+   "fixed": true
+  },
+  {
+   "id": "connections",
+   "type": "connections",
+   "width": "full",
+   "fixed": true
+  }
+ ]
+}

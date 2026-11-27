@@ -1,0 +1,99 @@
+{
+  "contract": "column/v1",
+  "id": "hydra",
+  "kind": "main",
+  "title": "Hydra-OS",
+  "what": "Sets up Hydra-OS, serves its pages and starts each page's daily run",
+  "apps": [
+    "home",
+    "dreams"
+  ],
+  "fresh_within": 26,
+  "guard": null,
+  "headless": [],
+  "owner_only": [],
+  "proofs": [],
+  "servers_needed": [],
+  "signals_in": [],
+  "signals_out": [],
+  "doctor_lines": [],
+  "offers": [],
+  "uses": [],
+  "sources": [],
+  "schedule": null,
+  "actions": [
+    {
+      "name": "answer",
+      "script": [
+        "scripts/act.py",
+        "answer"
+      ],
+      "confirm": "undo",
+      "undo": "unanswer",
+      "writes": [
+        "selftest/answers.jsonl"
+      ],
+      "fields": {
+        "question": {
+          "kind": "id",
+          "list": [
+            "scripts/act.py",
+            "questions"
+          ]
+        },
+        "pick": {
+          "kind": "id",
+          "list": [
+            "scripts/act.py",
+            "picks"
+          ],
+          "of": "question",
+          "optional": true
+        },
+        "on": {
+          "kind": "choice",
+          "of": [
+            "yes",
+            "no"
+          ],
+          "optional": true
+        },
+        "words": {
+          "kind": "words",
+          "max": 120,
+          "optional": true
+        }
+      }
+    },
+    {
+      "name": "unanswer",
+      "script": [
+        "scripts/act.py",
+        "unanswer"
+      ],
+      "confirm": "once",
+      "writes": [
+        "selftest/answers.jsonl"
+      ],
+      "fields": {
+        "question": {
+          "kind": "id",
+          "list": [
+            "scripts/act.py",
+            "questions"
+          ]
+        },
+        "pick": {
+          "kind": "id",
+          "list": [
+            "scripts/act.py",
+            "picks"
+          ],
+          "of": "question",
+          "optional": true
+        }
+      }
+    }
+  ],
+  "fits": null
+}

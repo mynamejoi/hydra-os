@@ -1,0 +1,15 @@
+{
+  "name": "hydra-os-get",
+  "owner": {
+    "name": "Hydra-OS"
+  },
+  "description": "Hydra-OS, installed through your own Claude app, at local scope in ~/Hydra-OS.",
+  "plugins": [
+    {
+      "name": "hydra",
+      "source": "./hydra",
+      "version": "1.0.0",
+      "description": "Hydra-OS itself: it sets up your Hydra-OS folder, serves Home and each of your pages, and starts each page's daily read"
+    }
+  ]
+}

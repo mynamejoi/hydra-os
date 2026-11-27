@@ -1,0 +1,16 @@
+{
+  "name": "health",
+  "version": "1.0.0",
+  "description": "Sleep, heart rate and what's moving them, from your Apple Health export or a file of days. Suggestions with their reason, never a diagnosis, a medicine, a supplement or a dose",
+  "author": {
+    "name": "Hydra-OS"
+  },
+  "keywords": [
+    "hydra-os",
+    "column",
+    "engine",
+    "sleep",
+    "recovery",
+    "wearable"
+  ]
+}

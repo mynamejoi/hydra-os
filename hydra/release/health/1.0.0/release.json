@@ -1,0 +1,9 @@
+{
+  "contract": "release/v1",
+  "plugin": "health",
+  "version": "1.0.0",
+  "tag": "health--v1.0.0",
+  "commit": "e871a6da6acec56f0546cceb3e8161b7b518393c",
+  "exported_at": "2026-11-27T13:40:48-05:00",
+  "marketplace": "hydra-pillars"
+}

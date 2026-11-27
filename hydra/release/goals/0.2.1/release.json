@@ -1,0 +1,9 @@
+{
+  "contract": "release/v1",
+  "plugin": "goals",
+  "version": "0.2.1",
+  "tag": "goals--v0.2.1",
+  "commit": "cc02533bba889a1e8766402036f2f732e10a1a3b",
+  "exported_at": "2026-11-27T13:40:46-05:00",
+  "marketplace": "hydra-pillars"
+}

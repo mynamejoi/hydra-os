@@ -1,0 +1,811 @@
+/* Hydra-OS's kit: the one stylesheet every page links, served by Home's server at /kit/style.css.
+   Its tokens, glass, sky, spacing and parts are the same on every page.
+   A page holds no style of its own: kit.py draws every part these rules dress.
+   Home's own parts sit under .web, an app page's under main.pg, and the Goals page's list and detail at the end. */
+:root{
+  --goals:#0e6b74;--health:#176b46;--finance:#1c56ad;--network:#934419;--research:#7c3f90;--building:#7a5700;--content:#ad2f2f;--dreams:#4149b5;
+  --ink:#10141f;--ink2:rgba(16,20,31,.72);--line:rgba(16,20,31,.12);--rule:rgba(16,20,31,.32);
+  --tile:rgba(255,255,255,.86);--edge:rgba(255,255,255,.62);--well:rgba(16,20,31,.08);--key:#10141f;--keyink:#fff;
+  --shade:rgba(10,30,70,.3);--gloss:rgba(255,255,255,.7);--dash:rgba(255,255,255,.8);--solid:#f5f6f8;
+  --sh:0 1px 2px rgba(10,30,70,.06),0 14px 32px -18px var(--shade);
+  --ease:cubic-bezier(.23,1,.32,1);
+  /* Type: five roles and nothing else, in the system font. Size, weight and leading travel together; tracking is set per size, as Apple's text styles do. */
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+  --lt:700 1.75rem/1.2143 var(--font);--lt-k:.013em;   /* Large Title 28/34: the greeting */
+  --ti:600 1.0625rem/1.2941 var(--font);--ti-k:-.024em; /* Title 17/22: section names */
+  --hl:600 .9375rem/1.3333 var(--font);--hl-k:-.016em;  /* Headline 15/20: a card's finding, a goal's name */
+  --bo:400 .875rem/1.4286 var(--font);--bo-k:-.011em;   /* Body 14/20 */
+  --ca:400 .8125rem/1.3846 var(--font);--ca-k:-.006em;  /* Caption 13/18, secondary */
+  /* Spacing, on an 8-point grid: 16 between and inside cards, 8 and 12 inside a card, 4 only between a mark and its label. */
+  --gap:1rem;--pad:1rem;--r:1.25rem;
+  color-scheme:light;
+}
+:root[data-theme=dark]{
+  --goals:#5ccfd6;--health:#5fd39b;--finance:#7fb0ff;--network:#f0a07a;--research:#d09be3;--building:#e6bd55;--content:#ff8a8a;--dreams:#a3abff;
+  --ink:#f5f5f7;--ink2:rgba(245,245,247,.72);--line:rgba(245,245,247,.14);--rule:rgba(245,245,247,.36);
+  --tile:rgba(22,24,30,.8);--edge:rgba(255,255,255,.1);--well:rgba(255,255,255,.12);--key:#f5f5f7;--keyink:#10141f;
+  --shade:rgba(0,0,0,.55);--gloss:rgba(255,255,255,.08);--dash:rgba(255,255,255,.42);--solid:#1c1e25;
+  color-scheme:dark;
+}
+/* The page's own colour is the app's approved pair when the kit knows the app, else its accent number as a hue.
+   --gc is the same colour as light, for the soft glow low in the sky. */
+:where(body){--app:oklch(48% .12 var(--hue,205));--gc:oklch(76% .14 var(--hue,205))}
+:where(:root[data-theme=dark] body){--app:oklch(78% .12 var(--hue,205))}
+body[data-app=goals]{--app:var(--goals);--gc:rgb(58 196 206)}
+body[data-app=health]{--app:var(--health);--gc:rgb(66 212 124)}
+body[data-app=finance]{--app:var(--finance);--gc:rgb(84 150 255)}
+body[data-app=network]{--app:var(--network);--gc:rgb(238 126 82)}
+body[data-app=research],body[data-app=learning]{--app:var(--research);--gc:rgb(186 122 228)}  /* Research keeps the id learning */
+body[data-app=building]{--app:var(--building);--gc:rgb(236 180 62)}
+body[data-app=content]{--app:var(--content);--gc:rgb(240 98 98)}
+body[data-app=dreams]{--app:var(--dreams);--gc:rgb(124 132 255)}
+/* Another app named on this page (a goal's bar, a Connections line) that the kit has no pair for. */
+.hx{--c:oklch(48% .12 var(--hx))}
+:root[data-theme=dark] .hx{--c:oklch(78% .12 var(--hx))}
+/* The theme's colours are registered, so light and dark ease into each other at dusk and dawn instead of snapping. */
+@property --ink{syntax:'<color>';inherits:true;initial-value:#000}@property --ink2{syntax:'<color>';inherits:true;initial-value:#000}@property --line{syntax:'<color>';inherits:true;initial-value:#000}@property --rule{syntax:'<color>';inherits:true;initial-value:#000}@property --tile{syntax:'<color>';inherits:true;initial-value:#000}@property --edge{syntax:'<color>';inherits:true;initial-value:#000}@property --well{syntax:'<color>';inherits:true;initial-value:#000}@property --key{syntax:'<color>';inherits:true;initial-value:#000}@property --keyink{syntax:'<color>';inherits:true;initial-value:#000}@property --shade{syntax:'<color>';inherits:true;initial-value:#000}@property --gloss{syntax:'<color>';inherits:true;initial-value:#000}@property --dash{syntax:'<color>';inherits:true;initial-value:#000}@property --page{syntax:'<color>';inherits:true;initial-value:#000}@property --goals{syntax:'<color>';inherits:true;initial-value:#000}@property --health{syntax:'<color>';inherits:true;initial-value:#000}@property --finance{syntax:'<color>';inherits:true;initial-value:#000}@property --network{syntax:'<color>';inherits:true;initial-value:#000}@property --research{syntax:'<color>';inherits:true;initial-value:#000}@property --building{syntax:'<color>';inherits:true;initial-value:#000}@property --content{syntax:'<color>';inherits:true;initial-value:#000}@property --dreams{syntax:'<color>';inherits:true;initial-value:#000}
+:root.eased{transition:--ink 1.4s ease,--ink2 1.4s ease,--line 1.4s ease,--rule 1.4s ease,--tile 1.4s ease,--edge 1.4s ease,--well 1.4s ease,--key 1.4s ease,--keyink 1.4s ease,--shade 1.4s ease,--gloss 1.4s ease,--dash 1.4s ease,--page 1.4s ease,--goals 1.4s ease,--health 1.4s ease,--finance 1.4s ease,--network 1.4s ease,--research 1.4s ease,--building 1.4s ease,--content 1.4s ease,--dreams 1.4s ease}
+*{box-sizing:border-box;margin:0}
+html{font:16px/1.4286 var(--font);-webkit-font-smoothing:antialiased;font-optical-sizing:auto}
+body{min-height:100vh;font:var(--bo);letter-spacing:var(--bo-k);color:var(--ink);background:#0b1026;overflow-x:hidden}
+a{color:inherit;text-underline-offset:3px}
+button,input,select{font:inherit;letter-spacing:inherit;color:inherit}
+[hidden]{display:none!important}
+ul{list-style:none;padding:0}
+:focus-visible{outline:2px solid #ffd25e;outline-offset:2px}
+.t :focus-visible,.t:focus-visible{outline-color:var(--ink)}
+::selection{background:rgba(255,210,94,.5)}
+.wrap{max-width:1584px;margin:0 auto;padding:0 1rem 4rem;overflow-x:clip}
+/* Every page's own slim left rail: Home, then each installed app, the current one marked. It floats where the
+   frame had it, and the page starts where the frame's canvas did. Narrow, hovering or focusing it opens the labels over
+   the page, so the page never reflows; from 1800 wide it shows them. A phone goes without. */
+:root{--rail:60px;--rail-bg:#ecebe6;--rail-ink:#3a3936;--rail-sel:#dfddd6;--rail-hov:#e4e2db;--rail-side:#f3f2ee;--rail-lift:0 12px 32px rgba(0,0,0,.16),0 0 0 1px rgba(0,0,0,.06)}
+:root[data-theme=dark]{--rail-bg:#1b1b1a;--rail-ink:#d4d1ca;--rail-sel:#2c2b29;--rail-hov:#262523;--rail-side:#202020;--rail-lift:0 12px 32px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06)}
+body:has(> .rail){padding-left:calc(var(--rail) + 8px)}
+.rail{position:fixed;z-index:30;left:0;top:8px;bottom:8px;width:var(--rail);font:400 14px/1.45 var(--font)}
+.rail .nav{position:absolute;inset:0;width:var(--rail);display:flex;flex-direction:column;gap:4px;padding:12px 8px;border-radius:0 14px 14px 0;background:var(--rail-bg);transition:width .2s cubic-bezier(.23,1,.32,1),box-shadow .2s ease}
+.rail .nav a.shop,.rail .nav a.help{margin-top:auto}.rail .nav a.shop+a.help{margin-top:0}  /* the Shop, set apart at the rail's foot */
+.rail .nav a{display:flex;align-items:center;gap:12px;height:40px;padding:0 12px;border-radius:10px;color:var(--rail-ink);text-decoration:none;white-space:nowrap;overflow:hidden;font-size:14px;letter-spacing:-.011em;transition:background .15s ease}
+.rail .nav a:active{background:var(--rail-sel)}
+.rail .nav a:hover{background:var(--rail-hov)}
+.rail .nav a.on{background:var(--rail-sel);font-weight:600}
+.rail .nav a:focus-visible{outline:2px solid #0e6b74;outline-offset:1px}
+.rail .nav svg{flex:0 0 auto;width:20px;height:20px;color:var(--c,currentColor);stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.rail .nav .lbl{opacity:0;transition:opacity .15s ease}
+.rail .nav .mark{display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;margin-bottom:8px;color:var(--rail-ink);font-weight:600;font-size:15px;letter-spacing:-.016em;white-space:nowrap;overflow:hidden}
+.rail .nav .mark b{flex:0 0 auto;width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,#0e6b74,#4149b5)}
+@media (min-width:1800px){:root{--rail:196px}.rail .nav .lbl{opacity:1}}
+@media (max-width:1799px){.rail:hover .nav,.rail:focus-within .nav{width:196px;box-shadow:var(--rail-lift);background:var(--rail-side)}.rail:hover .lbl,.rail:focus-within .lbl{opacity:1}}
+@media (min-width:560px) and (max-width:680px){body:has(> .rail) .day{left:calc(var(--rail) + 1.5rem)}}
+@media (max-width:559px){.rail{display:none}body:has(> .rail){padding-left:0}}
+@media (prefers-reduced-motion:reduce){.rail .nav,.rail .nav .lbl{transition:none}}
+/* One symbol style: Tabler outline, drawn at the size of the text it sits with. */
+.ic{flex:none;width:1rem;height:1rem;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+/* The sky is the page: one smooth gradient for the hour, which the script blends from the sun's height. The upper sky stays deep, so white type holds 4.5:1 with nothing behind it. */
+.sky{position:fixed;inset:0;z-index:-1;--p1:45%;--p2:78%;background:#144c9c linear-gradient(#144c9c,#2068bc var(--p1),#5a9ce0 var(--p2),#b4d6f3)}
+.stars{position:absolute;inset:0;opacity:var(--staro,0);background:url(sky/stars.svg);-webkit-mask-image:linear-gradient(#000 0%,transparent 72%);mask-image:linear-gradient(#000 0%,transparent 72%)}
+/* An app page's colour is a soft glow low in the sky, a little stronger as the light goes. Home has none. The glass stays neutral. */
+.sky::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:var(--glo,0);mix-blend-mode:screen;background:radial-gradient(ellipse 125% 60% at 50% 108%,color-mix(in srgb,var(--gc) 95%,transparent),color-mix(in srgb,var(--gc) 62%,transparent) 24%,color-mix(in srgb,var(--gc) 34%,transparent) 46%,color-mix(in srgb,var(--gc) 14%,transparent) 68%,color-mix(in srgb,var(--gc) 4%,transparent) 86%,transparent);transition:opacity .6s ease}
+
+/* Home's first line, only when something stops every run: what it is, in plain words, and the one thing that fixes it. */
+/* Home's top: the greeting and the date on the left, the line of the day on the right. Between them the sun crosses. */
+.head{position:relative;padding:1rem 0 0;color:#fff;text-shadow:0 1px 2px rgba(0,20,60,.3);--xs:min(26vw,480px);--x0:calc(50% - var(--xs)/2);--rise:34px;--d:22px;--halo:110px}
+.top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,20rem);align-items:end;gap:.5rem 3rem}
+h1{font:var(--lt);letter-spacing:var(--lt-k)}
+.date{font:var(--bo);letter-spacing:var(--bo-k)}
+/* While nothing has run, Home says the one thing to do first, under the date. */
+.first{margin-top:.5rem;font:var(--hl);letter-spacing:var(--hl-k);text-wrap:balance}
+.cl0{display:flex;align-items:flex-start;gap:.5rem;margin-bottom:.75rem;font:var(--hl);letter-spacing:var(--hl-k);text-wrap:pretty}
+.cl0 .ic{margin-top:.125rem;color:var(--goals)}
+.egs0{margin:-.375rem 0 0;padding-left:1.5rem;font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2);text-wrap:pretty}
+/* A tip: one line on its part, on a small solid bubble pointing at it, closed
+   with x. It fades in over 150 ms, the same with reduced motion, since nothing moves. */
+.tipb{position:absolute;z-index:25;width:max-content;max-width:min(20rem,calc(100vw - 2rem));padding:.75rem 2.75rem .75rem .875rem;
+  border:1px solid var(--line);border-radius:.875rem;background:var(--solid);color:var(--ink);box-shadow:0 18px 40px -16px var(--shade);
+  opacity:0;transition:opacity .15s ease}
+.tipb.on{opacity:1}
+.tipb p{margin:0;font:var(--bo);letter-spacing:var(--bo-k);text-wrap:pretty}
+.tipb::before{content:"";position:absolute;left:var(--ax,1.25rem);top:-.4375rem;width:.75rem;height:.75rem;rotate:45deg;background:var(--solid);
+  border-left:1px solid var(--line);border-top:1px solid var(--line)}
+.tipb.up::before{top:auto;bottom:-.4375rem;border:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.tipx{position:absolute;right:0;top:0;display:grid;place-items:center;width:2.75rem;height:2.75rem;border:0;border-radius:999px;background:none;
+  color:var(--ink2);font:600 1.125rem/1 var(--font);cursor:pointer}
+@media (hover:hover){.tipx:hover{color:var(--ink)}}
+.tipx:focus-visible{outline:2px solid var(--goals);outline-offset:-6px}
+/* A sheet: solid, 420 wide, centred over the page dimmed behind it; its title
+   28/34 semibold, row titles 15 semibold, row text 13 in the secondary ink, 24 inside, one primary button 44 tall. It
+   comes in with opacity and a scale from .98, 300 ms, no bounce, and goes faster; with reduced motion it only fades. */
+.sheet{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:1rem;overflow:auto}
+.sheet[hidden]{display:none}
+.shv{position:fixed;inset:0;background:rgba(8,12,22,.42);opacity:0;transition:opacity .2s ease}
+:root[data-theme=dark] .shv{background:rgba(0,0,0,.5)}
+.sh{position:relative;width:min(26.25rem,100%);padding:1.5rem;border-radius:1.25rem;background:var(--solid);color:var(--ink);
+  box-shadow:inset 0 1px 0 var(--gloss),0 30px 70px -24px rgba(0,0,0,.55);opacity:0;scale:.98;transition:opacity .2s ease,scale .2s ease}
+.sheet.on .shv{opacity:1;transition:opacity .3s cubic-bezier(.23,1,.32,1)}
+.sheet.on .sh{opacity:1;scale:1;transition:opacity .3s cubic-bezier(.23,1,.32,1),scale .3s cubic-bezier(.23,1,.32,1)}
+.sh h2{margin:.5rem 0 0;font:600 1.75rem/2.125rem var(--font);letter-spacing:.013em;text-align:center;text-wrap:balance}
+.shl{margin-top:.75rem;font:var(--bo);letter-spacing:var(--bo-k);text-align:center;text-wrap:pretty}
+.shr{display:grid;gap:1rem;margin:1.5rem 0 0;padding:0;list-style:none}
+.shr li{display:grid;grid-template-columns:2rem minmax(0,1fr);gap:.75rem;align-items:start}
+.shr .ic{width:1.75rem;height:1.75rem;color:var(--app,var(--goals))}
+.shr b{display:block;font:600 .9375rem/1.25rem var(--font)}
+.shr p{margin-top:.125rem;font:400 .8125rem/1.125rem var(--font);color:var(--ink2);text-wrap:pretty}
+.shr a{color:var(--app,var(--goals));font-weight:600;text-decoration:none}
+.shr a:focus-visible{outline:2px solid var(--goals);outline-offset:2px;border-radius:.25rem}
+.shf{margin-top:1.5rem}.shf label{display:block;font:600 .8125rem/1.125rem var(--font)}
+.shf input{display:block;width:100%;min-height:2.75rem;margin-top:.375rem;padding:0 .875rem;border:1px solid var(--line);border-radius:.75rem;background:var(--well);
+  font:var(--bo);color:var(--ink);caret-color:var(--goals)}
+.shf input::placeholder{color:var(--ink2)}.shf input:focus-visible{outline:2px solid var(--goals);outline-offset:1px}
+.sho{margin-top:.25rem;font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2)}
+.sh .said{margin-top:.75rem;text-align:center}.sh .said:empty{display:none}
+.shb{display:grid;gap:.25rem;margin-top:1.5rem}
+.shgo,.shno{min-height:2.75rem;border:0;border-radius:.75rem;font:600 .9375rem/1.25rem var(--font);cursor:pointer;transition:scale .12s ease}
+.shgo{background:var(--key);color:var(--keyink)}.shno{background:none;color:var(--ink2)}
+.shgo:active,.shno:active{scale:.97}.shgo:disabled{opacity:.6;cursor:default}
+.shgo:focus-visible,.shno:focus-visible{outline:2px solid var(--goals);outline-offset:2px}
+@media (hover:hover){.shno:hover{color:var(--ink)}}
+/* Home's greeting, arriving with the name as the welcome sheet goes: opacity and a scale from .98, 300 ms, or a fade. */
+.head h1.arrive{animation:arrive .3s cubic-bezier(.23,1,.32,1)}
+@keyframes arrive{from{opacity:0;scale:.98}}
+@keyframes arrive-fade{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){.sh,.sheet.on .sh{scale:1;transition:opacity .2s linear}.sheet.on .shv{transition:opacity .2s linear}
+  .head h1.arrive{animation:arrive-fade .2s linear}.shgo:active,.shno:active{scale:1}}
+.quote{font:var(--bo);letter-spacing:var(--bo-k);text-align:right;text-wrap:balance}
+.quote p{display:inline}
+.quote cite{margin-left:.4em;font:var(--ca);letter-spacing:var(--ca-k);white-space:nowrap}
+/* The sun and the moon belong to the sky: a small crisp disc with a soft halo, behind the header, clear of the type. */
+.orb{position:absolute;z-index:-1;width:0;height:0;transition:opacity .4s ease}
+.orb::before,.orb::after{content:"";position:absolute;border-radius:50%}
+.sun{left:calc(var(--x0) + var(--sx,.3)*var(--xs));bottom:calc(10px + var(--sy,.5)*var(--rise) - var(--sk,0)*var(--d)*1.3);opacity:var(--so,1);--hs:calc(var(--halo)*var(--sg,1))}
+.sun::before{left:calc(var(--hs)/-2);top:calc(var(--hs)/-2);width:var(--hs);height:var(--hs);background:radial-gradient(closest-side,color-mix(in srgb,var(--sunc,#fff8de) 52%,transparent),color-mix(in srgb,var(--sunc,#fff8de) 15%,transparent) 46%,transparent)}
+.sun::after{left:calc(var(--d)/-2);top:calc(var(--d)/-2);width:var(--d);height:var(--d);background:var(--sunc,#fff8de)}
+.moon{left:calc(var(--x0) + var(--mx,.3)*var(--xs));bottom:calc(10px + var(--my,.5)*var(--rise));opacity:var(--mo,0)}
+.moon::before{left:calc(var(--halo)/-2);top:calc(var(--halo)/-2);width:var(--halo);height:var(--halo);background:radial-gradient(closest-side,rgba(206,218,255,.3),rgba(206,218,255,.08) 46%,transparent)}
+.moon::after{left:calc(var(--d)/-2);top:calc(var(--d)/-2);width:var(--d);height:var(--d);background:#f1f3fb;box-shadow:inset -6px -4px 0 rgba(118,132,186,.6)}
+/* An app page has no header band. Its name is its title, with the way home before it, in white on the sky. */
+.crumb{display:flex;align-items:baseline;gap:.5rem;padding-top:1rem;font:var(--lt);letter-spacing:var(--lt-k);color:#fff;text-shadow:0 1px 2px rgba(0,20,60,.3)}
+.crumb a,.crumb i{font:var(--ti);letter-spacing:var(--ti-k);font-style:normal}
+.crumb a{text-decoration:none}
+@media (hover:hover){.crumb a:hover{text-decoration:underline}}
+.sub{font:var(--bo);letter-spacing:var(--bo-k);color:#fff;text-shadow:0 1px 2px rgba(0,20,60,.3)}
+.sub+.sub{margin-top:.125rem}
+/* A first-visit hint: one line, shown until the person has left the page once. Under the title it
+   reads as the header's own lines do; at a drop place, in the app's colour. */
+.sub.hint{font-weight:600}
+.sub.swhy{font:var(--ca);letter-spacing:var(--ca-k)}  /* a lead move's why, under it */
+/* A move's one button under the page's title, on the sky: the drop place's "Add a fresh export". */
+.hd-act{margin-top:.5rem}
+.hd-act .cta{background:rgba(255,255,255,.92);color:color-mix(in srgb,var(--app) 80%,#000)}
+:root[data-theme=dark] .hd-act .cta{background:rgba(16,22,40,.86);color:color-mix(in srgb,var(--app) 70%,#fff)}
+/* Home's tile ends in its app's suggestion, with the way to see why on its page. */
+.sg{margin-top:.625rem;text-wrap:pretty}
+.sg a{margin-left:.25rem;font-weight:600;color:var(--c);text-decoration:none;white-space:nowrap}
+.sg a:hover,.sg a:focus-visible{text-decoration:underline;text-underline-offset:3px}
+.drop .hint{font:var(--ca);font-weight:600;letter-spacing:var(--ca-k);color:var(--c,var(--app));text-wrap:balance}
+
+/* Glass: one neutral frosted material for every surface, in light and in dark. An app's colour lives only in its symbols, its names and its chart marks. */
+.t{position:relative;min-width:0;border-radius:var(--r);border:1px solid var(--edge);background:var(--tile);-webkit-backdrop-filter:blur(30px) saturate(1.6);backdrop-filter:blur(30px) saturate(1.6);box-shadow:inset 0 1px 0 var(--gloss),var(--sh)}
+/* Title: one style for every section name. A page's own sections carry its colour (.hh); the goals band keeps Goals' teal. */
+.h{display:flex;align-items:center;gap:.5rem;font:var(--ti);letter-spacing:var(--ti-k)}
+.h::before{content:"";flex:none;width:3px;height:1rem;border-radius:1.5px;background:var(--bar,var(--goals))}
+.h a{text-decoration:none}
+@media (hover:hover){.h a:hover,a.gn:hover{text-decoration:underline}}
+.hh{--bar:var(--app)}
+/* Caption: every axis, label and status line. */
+.lb,.st,.gs,.mv,.nt,.gl,.tally,.un,.how,.tag,.sv,.pop em,.gi,.u,.ct,.svl,.meta,.key,.yl,.axl,.src,.msg{font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2)}
+.lb,.yl,.axl{white-space:nowrap;font-variant-numeric:tabular-nums}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip-path:inset(50%)}
+
+/* The goals band, on Home and at the top of every app page. Each goal: its name, one bar with today's tick, one status line, and a next move only when it's behind. */
+.gband{display:grid;grid-template-columns:4.5rem minmax(0,1fr);gap:0 .5rem;padding:1rem}
+.web>.gband{column-gap:0}
+.tally{margin-top:.5rem}
+.tally b{display:block;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.gl5{display:grid;grid-template-columns:repeat(var(--n,5),minmax(0,1fr));row-gap:1rem}
+.gl2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem 2.5rem}
+.g{display:grid;align-content:start;min-width:0}
+.web .g{margin:-.5rem 0;padding:.5rem;border-radius:.75rem;cursor:pointer;transition:background .2s ease,opacity .2s ease}
+.web .g:focus-visible{outline-offset:-2px}
+.gn{justify-self:start;font:var(--hl);letter-spacing:var(--hl-k);text-decoration:none}
+/* The progress bar, the same wherever progress shows: a track, the fill in the app's colour, and a tick where today should be. */
+.gb{position:relative;display:block;height:.75rem;margin:.375rem 0 .25rem}
+.gb::before,.gb i{content:"";position:absolute;left:0;top:50%;height:.375rem;margin-top:-.1875rem;border-radius:.1875rem}
+.gb::before{right:0;background:var(--well)}
+.gb i{width:var(--at);background:var(--c)}
+.gb b{position:absolute;left:var(--due);top:0;width:2px;height:100%;margin-left:-1px;border-radius:1px;background:var(--ink);box-shadow:0 0 0 1.5px var(--solid)}
+.gb.no i,.gb.no b{display:none}
+.gs{text-wrap:pretty}
+.g.off .gs b{font-weight:600;color:var(--ink)}
+.gs b{font-weight:400}
+.mv{color:var(--ink);text-wrap:pretty}
+.g.on{background:var(--well)}
+.web.focus .g:not(.on){opacity:.42}
+/* When Home's band has scrolled away, a slim copy of it stays at the top while the widgets are in view. A phone goes without. */
+.gdock{position:sticky;top:8px;z-index:6;height:0}
+.gbar{position:absolute;left:0;right:0;top:0;display:grid;grid-template-columns:repeat(var(--n,5),minmax(0,1fr));padding:.25rem;border-radius:1rem;border:1px solid var(--line);background:var(--solid);box-shadow:var(--sh);opacity:0;visibility:hidden;transform:translateY(-6px);transition:opacity .16s ease,transform .16s ease,visibility 0s .16s}
+.gbar.show{opacity:1;visibility:visible;transform:none;transition-delay:0s}
+.gi{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:0 .5rem;padding:.25rem .75rem;border-radius:.75rem;cursor:default;transition:background .16s ease,opacity .16s ease}
+.gi .nm{grid-column:1/-1;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gi em{font-style:normal;white-space:nowrap}
+.gi.off em{font-weight:600;color:var(--ink)}
+.gi.un .gb i,.gi.un .gb b{display:none}
+.gi.on{background:var(--well)}
+.gbar.focus .gi:not(.on){opacity:.45}
+/* A row's title sits in the gap under the band, on its own small piece of the same glass, so it reads over any sky. */
+.lane{display:flex;align-items:center;padding:1rem 0 .75rem}
+.plate{position:relative;height:2rem;padding:0 .75rem 0 .625rem;border-radius:.625rem;border:1px solid var(--edge);background:var(--tile);-webkit-backdrop-filter:blur(30px) saturate(1.6);backdrop-filter:blur(30px) saturate(1.6);box-shadow:inset 0 1px 0 var(--gloss)}
+
+/* Home, Your apps: one card an app, and at most four things on it. Its symbol and name in its colour, with how it stands at the right; the finding; one picture; the goal it moves. */
+.web{position:relative;margin-top:1rem}
+@keyframes fade{from{opacity:0}}
+.grid{display:grid;grid-template-columns:repeat(var(--cols,3),minmax(0,1fr));gap:var(--gap)}
+.add.wide{grid-column:1/-1;min-height:7rem}
+.card{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;padding:var(--pad);cursor:pointer;transition:box-shadow .2s ease}
+.card.new{animation:fade .36s ease both}
+.ch{display:flex;align-items:center;gap:.75rem;min-height:1.25rem}
+.card h2{display:flex;align-items:center;gap:.375rem;margin-right:auto;font:var(--ca);font-weight:600;letter-spacing:var(--ca-k);color:var(--c)}
+.card h2 a{text-decoration:none}
+@media (hover:hover){.card h2 a:hover{text-decoration:underline}}
+.st{white-space:nowrap}
+.st.off{font-weight:600;color:var(--ink)}
+.say{margin-top:.5rem;font:var(--hl);letter-spacing:var(--hl-k);text-wrap:balance}
+.gl{display:flex;align-items:center;gap:.375rem;margin-top:.5rem}
+.gl .ic{width:.875rem;height:.875rem}
+.gl{flex-wrap:wrap}
+.gl .cap{margin-left:auto}
+.card>*{transition:opacity .2s ease}
+.web.focus .card:not(.on)>*,.web.focus .add>*{opacity:.4}
+.card.on{box-shadow:inset 0 1px 0 var(--gloss),0 0 0 2px var(--ring,var(--c)),var(--sh)}
+/* What Research and Dreams brought: a small glyph and a count in a corner. Each opens its top item on hover, focus or a tap. */
+.bd{position:relative;display:inline-flex;align-items:center;gap:.1875rem;padding:0;border:0;border-radius:.25rem;background:none;font:var(--ca);letter-spacing:var(--ca-k);font-variant-numeric:tabular-nums;color:var(--ink2);cursor:pointer;-webkit-appearance:none;appearance:none;transition:color .15s ease}
+.bd::before{content:"";position:absolute;inset:-.75rem -.375rem}
+.bd .ic{width:.875rem;height:.875rem}
+.bd+.bd{margin-left:-.25rem}
+@media (hover:hover){.bd:hover{color:var(--ink)}}
+.bd.open,.bd:focus-visible{color:var(--ink)}
+.pop{position:absolute;z-index:6;top:calc(100% + .5rem);right:-.25rem;display:grid;gap:2px;width:max-content;max-width:min(16.5rem,72vw);padding:.5rem .75rem;border-radius:.75rem;border:1px solid var(--line);background:var(--solid);box-shadow:0 14px 30px -12px var(--shade);font:var(--bo);letter-spacing:var(--bo-k);color:var(--ink);text-align:left;white-space:normal;text-wrap:pretty;pointer-events:none;opacity:0;visibility:hidden;transform:translateY(-3px);transform-origin:100% 0;transition:opacity .15s ease,transform .15s var(--ease),visibility 0s .15s}
+.bd:focus-visible .pop,.bd.open .pop{opacity:1;visibility:visible;transform:none;transition-delay:0s}
+@media (hover:hover){.bd:hover .pop{opacity:1;visibility:visible;transform:none;transition-delay:0s}}
+/* Under Home's apps, Research and Dreams have a row each. Dreams works overnight, so its row keeps night glass at any hour. */
+.strip{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap);margin-top:var(--gap)}
+.sp{position:relative;display:flex;align-items:center;gap:.5rem;min-width:0;min-height:2.5rem;padding:.5rem 1rem;border:1px solid var(--edge);border-radius:.875rem;background:var(--tile);-webkit-backdrop-filter:blur(30px) saturate(1.6);backdrop-filter:blur(30px) saturate(1.6);box-shadow:inset 0 1px 0 var(--gloss),var(--sh);text-align:left;color:var(--ink);cursor:pointer;transition:box-shadow .2s ease;-webkit-appearance:none;appearance:none}
+.sp .ic{color:var(--c)}
+.sp b{font-weight:600;color:var(--c)}
+.sp.on{box-shadow:inset 0 1px 0 var(--gloss),0 0 0 2px var(--c),var(--sh)}
+.sp.addr{border:1.5px dashed var(--rule)}
+.sp a.go{color:inherit;text-decoration:none}.sp a.go:hover b,.sp a.go:focus-visible b{text-decoration:underline;text-underline-offset:3px}
+.sp[data-eng=dreams]{--ink:#eef0fb;border-color:rgba(163,171,255,.42);background:linear-gradient(165deg,rgba(38,42,118,.94),rgba(26,28,86,.96));box-shadow:inset 0 1px 0 rgba(255,255,255,.12),var(--sh)}
+.sp[data-eng=dreams] b,.sp[data-eng=dreams] .ic{color:#b4baff}
+.sp[data-eng=dreams].on{box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 0 2px #b4baff,var(--sh)}
+.sp[data-eng=dreams] .via{color:inherit}
+
+/* The one chart: the last 14 days ending today as fourteen rounded bars at one height, so a day lines up down the page.
+   Quiet grey is a day. The app's colour is only on the days that prove the finding. At most one dashed reference line. Under the bars: the first day, one key, and Today. */
+.ins{position:relative;align-self:end;margin-top:.5rem;--ph:3.125rem;--bar:color-mix(in srgb,var(--ink) 22%,transparent)}
+:root[data-theme=dark] .ins{--bar:color-mix(in srgb,var(--ink) 30%,transparent)}
+.web .ins{border-radius:.375rem;cursor:default;container-type:inline-size;touch-action:pan-y;-webkit-tap-highlight-color:transparent}
+.web .ins:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
+.pl{position:relative;display:grid;grid-template-columns:repeat(14,minmax(0,1fr));align-items:end;height:var(--ph)}
+.pl i{position:relative;justify-self:center;width:66%;height:max(.1875rem,calc(var(--h)*100%));border-radius:.25rem;background:var(--bar);transition:opacity .15s ease}
+.pl .a{background:var(--c)}
+.pl .z{opacity:.55}
+/* A day that hasn't happened yet is an open, dashed slot at its planned height. */
+.pl .pln{border:1.5px dashed var(--ink2);background:none}
+.rf{position:absolute;left:0;right:0;bottom:calc(var(--y)*100%);height:0;border-top:1px dashed var(--rule);pointer-events:none}
+.rf em{position:absolute;right:0;bottom:.0625rem;font:var(--ca);line-height:1.2;font-style:normal;letter-spacing:var(--ca-k);color:var(--ink2)}
+.ax{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;margin-top:.125rem;line-height:1rem;white-space:nowrap}
+.ky{display:flex;justify-content:center;align-items:center;gap:.75rem;min-width:0}
+.ky span{display:inline-flex;align-items:center;gap:.3125rem}
+.ky i{flex:none;width:.875rem;height:0;border-top:1px dashed var(--ink2)}
+/* Home's day line: one in every chart, on the same day. It moves without easing, as a finger would. The day is read across the apps beside Your apps; on a phone it holds the foot of the window. */
+.vl{position:absolute;z-index:2;top:-.25rem;bottom:1.125rem;left:calc((var(--sd,13) + .5)*100%/14);width:1px;margin-left:-.5px;background:var(--ink);opacity:0;pointer-events:none}
+.web.scrub .vl{opacity:.5}
+.web.scrub .pl i:not(.hi){opacity:.38}
+.web.scrub .pl .z:not(.hi){opacity:.25}
+.web.scrub .pl .z.hi{opacity:1}
+.web .lane{position:relative;z-index:4}
+.dayw{position:relative;flex:1;min-width:0;height:2rem;margin-left:.75rem;pointer-events:none}
+.day{position:absolute;left:0;top:0;max-width:100%;height:auto;min-height:2rem;padding:.3125rem .75rem;font:var(--bo);letter-spacing:var(--bo-k);text-wrap:pretty;opacity:0;visibility:hidden;transition:opacity .15s ease,visibility .15s}
+.day b{font-weight:600;white-space:nowrap}
+.web.scrub .day{opacity:1;visibility:visible}
+/* Home's add slot: where the next widget joins. */
+.add{display:grid;place-content:center;justify-items:center;gap:.25rem;padding:1rem;text-align:center;border:1.5px dashed var(--rule);box-shadow:none;cursor:pointer;-webkit-appearance:none;appearance:none}
+.add>*{transition:opacity .2s ease}
+.plus{display:grid;place-items:center;width:2rem;height:2rem;margin-bottom:.25rem;border-radius:50%;background:var(--key);color:var(--keyink)}
+.add b,.nx{font:var(--hl);letter-spacing:var(--hl-k)}
+.nx{text-wrap:balance}
+.how{max-width:17rem;text-wrap:balance}
+
+/* An app page. Its readings sit in Home's card grammar, at most four things on a card: its symbol and name in the app's colour with today's figure beside them; the finding, the loudest line; and the last 14 days. */
+main.pg{padding-top:1rem;--c:var(--app);--dot:color-mix(in srgb,var(--ink) 54%,transparent)}
+:root[data-theme=dark] main.pg{--dot:color-mix(in srgb,var(--ink) 56%,transparent)}
+.row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
+.rd{display:grid;grid-template-rows:auto auto minmax(0,1fr);padding:var(--pad)}
+/* Each card ends in its move, then why; the card a suggestion's link opens on is ringed. */
+.rd .mv{margin:.75rem 0 0;font:var(--bo);letter-spacing:var(--bo-k);color:var(--ink);text-wrap:pretty}
+.rd .mv b{display:block;font-weight:600}
+.rd .mv span{display:block;font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2)}
+.rd{scroll-margin-top:.75rem}.rd:target{outline:2px solid var(--ink);outline-offset:2px}
+.rh{display:flex;align-items:center;justify-content:space-between;gap:.5rem;min-height:1.375rem}
+.kh{display:flex;align-items:center;gap:.375rem;min-width:0;font:var(--ca);font-weight:600;letter-spacing:var(--ca-k);color:var(--c)}
+.fig{display:flex;align-items:baseline;gap:.1875rem;white-space:nowrap}
+.fig b{font:var(--ti);letter-spacing:var(--ti-k);font-variant-numeric:tabular-nums}
+/* A section: its title with what the engines brought, its one entry line, its finding, its picture and one caption. Two or three can share a row. */
+.sec{margin-top:var(--gap);padding:1.5rem}
+.duo{display:grid;grid-template-columns:repeat(var(--n,2),minmax(0,1fr));gap:var(--gap);margin-top:var(--gap)}
+.duo>.sec{display:flex;flex-direction:column;margin-top:0}
+.fh{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.bds{position:relative;display:flex;align-items:center;gap:.75rem}
+.lead{margin-top:1rem;font:var(--hl);letter-spacing:var(--hl-k);text-wrap:balance}
+.bcap{margin-top:1rem;text-wrap:pretty;font-variant-numeric:tabular-nums}
+/* A suggestion: Claude's words and its why, and never a button. */
+.sg{margin-top:1rem;text-wrap:pretty}
+.sg b{font-weight:600}
+.sg span{color:var(--ink2)}
+.sgs{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:1rem 2.5rem;margin-top:1rem}
+/* The one place a thing is entered: a line at the top of the section it feeds, the same field Claude asks uses. Its label is in ink, and Return saves it. What was saved shows right under it, with Undo. */
+.sec>.ent{margin-top:.75rem;padding-bottom:1rem;border-bottom:1px solid var(--line)}
+.mf{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem}
+.mf>label:first-child{font:var(--ca);font-weight:600;letter-spacing:var(--ca-k);white-space:nowrap}
+.mf input[type=text]{flex:1 1 15rem;min-width:0;min-height:44px;padding:0 .875rem;border:1px solid var(--line);border-radius:.75rem;background:var(--well);text-overflow:ellipsis}
+.mf input::placeholder,.ask input::placeholder{color:var(--ink2)}
+.mf input[type=text]:focus-visible,.ask input:focus-visible{outline:2px solid var(--c);outline-offset:1px}
+.svl{display:flex;align-items:center;gap:.625rem;margin-bottom:-.25rem}
+.svl span:not(:empty),.svl .undo{margin-top:.75rem}
+.svl span:not(:empty){display:flex;align-items:center;min-height:32px}
+/* The saved line sits in a row of its own, so while it's empty it takes no room at all. */
+.got{display:flex;flex-wrap:wrap;align-items:flex-end;gap:0 1rem}
+/* Save shows once there's something to save, for a pointer or a finger. Return does the same. */
+.fld{position:relative;flex:1 1 15rem;min-width:0;display:flex}
+.fld>input{flex:1 1 auto;width:100%}
+.fld:has(.save:not([hidden]))>input{padding-right:4.25rem}
+.save{position:absolute;right:.25rem;top:50%;translate:0 -50%;min-height:2.25rem;padding:0 .75rem;border:0;border-radius:.5rem;background:none;font:var(--ca);font-weight:600;letter-spacing:var(--ca-k);color:color-mix(in srgb,var(--c,var(--goals)) 82%,var(--ink));cursor:pointer;-webkit-appearance:none;appearance:none}
+.save::before{content:"";position:absolute;inset:-.25rem 0}
+.save:active{opacity:.6}
+.ask .fld{margin-top:.5rem}
+.ask .fld>input{margin-top:0}
+/* The days as a grid, on the same fourteen columns: a row a kind and a column a day. A filled dot is a yes and a faint one a no, and there is no third mark. Colour is only on what the finding names. */
+.wkm{display:grid;gap:.5rem;min-width:0;margin-top:1rem}
+.mr{display:grid;grid-template-columns:10rem minmax(0,1fr) 7.5rem;align-items:center;gap:0 .75rem;min-height:1.25rem}
+.dz{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));place-items:center;text-align:center}
+.dz i,.ct i{flex:none;width:.625rem;height:.625rem;border-radius:50%;background:var(--well)}
+.dz .y{background:var(--dot)}
+.dz .a,.ct .a{background:var(--c)}
+.dz .td{background:none}
+.dz .now{font-weight:600;color:var(--ink)}
+.ct{display:flex;align-items:center;gap:.3125rem;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ct .a{border-radius:.125rem}
+.rc{margin-top:.25rem}
+.rc .ins{align-self:center;margin-top:0;--ph:2.5rem}
+.rc .pl i{width:.625rem}
+
+/* Claude asks: the one place for questions, at the foot of the page. */
+.asks{margin-top:3rem;padding:1.5rem}
+.asks .note{margin-top:.5rem;color:var(--ink2)}
+.qs{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:1.5rem 2.5rem;margin-top:1.5rem}
+.ask{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:.5rem}
+.tag{font-weight:600;color:var(--c)}
+.q{font:var(--hl);letter-spacing:var(--hl-k);text-wrap:pretty}
+.ask input{width:100%;min-height:44px;margin-top:.5rem;padding:0 .875rem;border:1px solid var(--line);border-radius:.75rem;background:var(--well)}
+.ans{margin-top:.5rem;padding-left:.75rem;border-left:2px solid var(--c)}
+.said{overflow-wrap:anywhere}
+.sv{display:flex;flex-wrap:wrap;align-items:center;gap:0 .625rem}
+.undo{border:0;background:none;min-height:32px;padding:0 2px;color:var(--ink2);text-decoration:underline;text-underline-offset:3px;white-space:nowrap;cursor:pointer}
+/* A question whose answer is a pick: chips in the well, the picked one solid. Each tap saves by itself. */
+.picks{display:flex;flex-wrap:wrap;gap:.75rem .375rem;margin-top:.5rem}
+.pk{position:relative;min-height:2rem;padding:0 .75rem;border:0;border-radius:999px;background:var(--well);font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink);cursor:pointer;-webkit-appearance:none;appearance:none;transition:background .15s ease,color .15s ease,transform .12s var(--ease)}
+.pk::before{content:"";position:absolute;inset:-.375rem 0}
+.pk:active{transform:scale(.97)}
+.pk[aria-checked=true],.pk[aria-pressed=true]{background:var(--key);color:var(--keyink)}
+.pk[aria-busy=true]{opacity:.6;cursor:progress}
+.msg{color:var(--ink)}
+.msg:empty{display:none}
+
+/* Connections: the last thing on an app's page, quiet and secondary to the data. Two labelled groups, one line a connection. App names are in their colour and everything else in ink. */
+.conn{margin-top:var(--gap);padding:1rem 1.5rem}
+.conn h2{font:var(--hl);letter-spacing:var(--hl-k)}
+.cg{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.75rem 1.5rem;margin-top:.5rem}
+.cg h3,.cn li,.lim{font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2)}
+.cg h3{font-weight:600;color:var(--ink)}
+.cg>.drop{grid-column:2;justify-self:start}
+.cn{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(18rem,100%),1fr));gap:.375rem 1.5rem}
+.cn li{--c:var(--ink);display:grid;grid-template-columns:auto minmax(0,1fr);gap:.375rem;text-wrap:pretty}
+.cn .ic{width:.875rem;height:.875rem;margin-top:.125rem;color:var(--c)}
+.cn b,.cn a{font-weight:600;color:var(--c);text-decoration:none}
+@media (hover:hover){.cn a:hover{text-decoration:underline}}
+.lim{margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--line);text-wrap:pretty}
+/* The foot of every page: where the records stay, and when the page was built. */
+.foot{margin-top:var(--gap);padding:.75rem 1.5rem;font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2);text-wrap:pretty}
+.foot .fl{display:flex;flex-wrap:wrap;gap:.25rem 1.25rem;margin-top:.375rem}  /* Help and Privacy */
+.foot .fl a{display:inline-flex;align-items:center;min-height:1.5rem;color:inherit;text-decoration:underline;text-underline-offset:3px}
+@media (hover:hover){.foot .fl a:hover{color:var(--ink)}}
+.foot .fl a:focus-visible{outline:2px solid var(--goals);outline-offset:2px;border-radius:.25rem}
+/* What Claude is pointing at: the block wears an outline in the page's colour, with its words, until it lets go. */
+[data-block].pointed{position:relative;outline:2.5px solid var(--c,var(--app));outline-offset:3px;border-radius:var(--r)}
+.pnote{position:absolute;z-index:8;left:1rem;top:-.6875rem;padding:.125rem .625rem;border-radius:999px;background:var(--key);font:var(--ca);font-weight:600;letter-spacing:var(--ca-k);color:var(--keyink);white-space:nowrap}
+
+/* Just installed: nothing is connected and no run has written anything. An empty section is its symbol, quiet; one line on what will appear there; and the one thing it needs, as a calm tinted action. */
+.es{display:grid;justify-items:center;gap:.5rem;padding:1rem 0 .25rem;text-align:center}
+.es>.ic{width:1.5rem;height:1.5rem;color:var(--ink2)}
+.es>p{max-width:32rem;text-wrap:balance}
+.via{font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2)}
+.acts{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.25rem .75rem}
+/* The tinted action: the app's colour as type on a wash of itself, a shade nearer the ink so it holds 4.5:1 on the wash by day and at night. */
+.cta{position:relative;display:inline-flex;align-items:center;min-height:2rem;padding:0 .875rem;border:0;border-radius:999px;background:color-mix(in srgb,var(--c,var(--goals)) 14%,transparent);font:var(--ca);font-weight:600;letter-spacing:var(--ca-k);color:color-mix(in srgb,var(--c,var(--goals)) 82%,var(--ink));white-space:nowrap;cursor:pointer;-webkit-appearance:none;appearance:none;transition:background .15s ease,transform .12s var(--ease)}
+a.cta{text-decoration:none}
+@media (hover:hover){.cta:hover{background:color-mix(in srgb,var(--c,var(--goals)) 22%,transparent)}}
+.cta:active{transform:scale(.97)}
+.cta:focus-visible{outline:2px solid var(--c,var(--goals));outline-offset:2px}
+.alt{position:relative;min-height:2rem;padding:0 2px;border:0;background:none;font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2);text-decoration:underline;text-underline-offset:3px;white-space:nowrap;cursor:pointer}
+/* A connect action can't type into Claude's panel. It files the request, and a small note over the button says what to do next. */
+.tip{position:absolute;z-index:7;left:50%;bottom:calc(100% + .375rem);translate:-50% 0;padding:.375rem .625rem;border:1px solid var(--line);border-radius:.625rem;background:var(--solid);box-shadow:0 14px 30px -12px var(--shade);font:var(--ca);font-weight:400;letter-spacing:var(--ca-k);color:var(--ink);text-decoration:none;white-space:nowrap;pointer-events:none;animation:tip .15s ease both}
+@keyframes tip{from{opacity:0}}
+/* The goals band with no goal: the one field that sets one, in the same pattern as every entry. A saved goal joins the band unmeasured, with Undo. */
+.g0{min-width:0}
+.g0 .gf{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem}
+.g0 label{font:var(--hl);letter-spacing:var(--hl-k);white-space:nowrap}
+.g0 input{flex:1 1 15rem;min-width:0;min-height:44px;padding:0 .875rem;border:1px solid var(--line);border-radius:.75rem;background:var(--well);text-overflow:ellipsis}
+.g0 input::placeholder{color:var(--ink2)}
+.g0 input:focus-visible{outline:2px solid var(--goals);outline-offset:1px}
+.g0l{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(17rem,100%),1fr));gap:.75rem 2.5rem}
+.g0l:not(:empty){margin-bottom:.75rem}
+.g0l li{display:grid;align-content:start;min-width:0}
+.g0l .gs{display:flex;flex-wrap:wrap;align-items:center;gap:0 .625rem}
+/* Examples: quiet chips that fill the field, ready to edit. */
+.egs{display:flex;flex-wrap:wrap;align-items:center;gap:.375rem .5rem;margin-top:.5rem}
+.eg{min-height:2rem;padding:0 .75rem;border:0;border-radius:999px;background:var(--well);font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink);cursor:pointer;-webkit-appearance:none;appearance:none;transition:transform .12s var(--ease)}
+.eg:active{transform:scale(.97)}
+/* Claude asks with nothing to ask yet: one quiet line. */
+.asks.quiet{display:flex;flex-wrap:wrap;align-items:center;gap:0 .5rem;margin-top:var(--gap);padding:1rem 1.5rem}
+.asks.quiet .note{margin:0}
+/* Connections with nothing connected: External says so once, and each source is a row with its own connect action. */
+.cg h3 .via{display:block;font-weight:400}
+.cn.nc li{grid-template-columns:auto minmax(0,1fr) auto;align-items:center}
+.cn.nc .cta{min-height:1.75rem;padding:0 .75rem}
+.cn.nc .tip{left:auto;right:0;translate:none}
+/* A button at a card's start keeps its tip on the card: it opens from the button's start, and wraps on a phone. */
+.act0 .tip{left:0;translate:none;width:max-content;max-width:min(22rem,calc(100vw - 6rem));white-space:normal}
+.cn.nc .cta{--c:var(--app)}
+/* What to do first, in order, and a file's drop place: the app's line, one calm button, and one line that says how it went. */
+.steps{display:grid;gap:.25rem;max-width:32rem;margin:0;padding-left:1.25rem;list-style:decimal;text-align:left;text-wrap:pretty}
+.steps li::marker{color:var(--ink2);font-variant-numeric:tabular-nums}
+.drop{display:grid;justify-items:center;gap:.5rem;width:min(100%,32rem);padding:1rem;border:1.5px dashed var(--rule);border-radius:.875rem;text-align:center;transition:border-color .15s ease,background .15s ease}
+.drop .dl{font:var(--hl);letter-spacing:var(--hl-k);text-wrap:balance}
+.drop.over{border-color:var(--c,var(--goals));background:color-mix(in srgb,var(--c,var(--goals)) 8%,transparent)}
+.drop[aria-busy=true] .cta{opacity:.6;cursor:progress}
+.dmsg{font:var(--bo);letter-spacing:var(--bo-k);color:var(--ink);text-wrap:pretty}
+.dmsg:empty{display:none}
+/* A section that is only an empty state is a slim card. In a row of two it sits in the middle of the taller card's height. */
+.t.e0{padding:.5rem 1.5rem 1.25rem}
+.duo .es{margin-block:auto}
+/* Home, just installed. Each app's widget keeps its place and its size: its symbol and name; one line on what it will show; the 14 days as fourteen empty marks; and the one thing it needs. Nothing lights or dims yet. */
+.web.new .card,.web.new .sp{cursor:default}
+.say0{margin-top:.5rem;text-wrap:pretty}
+.ins0{align-self:end;margin-top:.5rem;--bar:color-mix(in srgb,var(--ink) 22%,transparent)}
+:root[data-theme=dark] .ins0{--bar:color-mix(in srgb,var(--ink) 30%,transparent)}
+.ins0 .pl{height:1.375rem}
+.ins0 .pl i{height:.1875rem;opacity:.55}
+.act0{display:grid;justify-items:start;gap:.25rem;margin-top:.5rem}
+
+/* The Goals page. Two panes: on the left the goals, in the person's order, each a row that can be picked; on the right the picked goal. Nothing lights on hover here; the picked row is the only one marked. */
+.lk{border:0;background:none;min-height:32px;padding:0 2px;color:var(--ink2);text-decoration:underline;text-underline-offset:3px;white-space:nowrap;cursor:pointer}
+.tb{border:0;background:none;min-height:32px;padding:0 2px;font-weight:600;color:var(--goals);white-space:nowrap;cursor:pointer;transition:opacity .15s ease}
+@media (hover:hover){.tb:hover{opacity:.7}}
+.tb:active{opacity:.5}
+.panes{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1fr);gap:var(--gap)}
+.list,.detail{padding:var(--pad)}
+.list{z-index:2;display:grid;grid-template-rows:auto minmax(0,1fr) auto}
+.lh{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:.25rem 1rem}
+.lh .tally{margin-top:0}
+.lh .tally b{display:inline}
+.rows{align-self:start;margin:.5rem -.5rem 0}
+.gr{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:0 .75rem;padding:.75rem .5rem;border-radius:.75rem}
+.gr+.gr::before{content:"";position:absolute;left:.5rem;right:.5rem;top:0;border-top:1px solid var(--line)}
+.gr.sel{background:var(--well)}
+.gr.sel::before,.gr.sel+.gr::before{border-color:transparent}
+.gr .gn{grid-area:1/1;justify-self:start;min-width:0;padding:0;border:0;background:none;font:var(--hl);letter-spacing:var(--hl-k);color:var(--ink);text-align:left;overflow-wrap:anywhere}
+button.gn{cursor:pointer}
+button.gn::after{content:"";position:absolute;inset:0;border-radius:.75rem}
+button.gn:focus-visible{outline:none}
+button.gn:focus-visible::after{outline:2px solid var(--ink);outline-offset:-2px}
+.gr .bds{grid-area:1/2;z-index:1}
+.gr .bds:hover,.gr .bds:focus-within,.gr .bds:has(.open){z-index:3}
+.gr .gb{grid-area:2/1/3/3}
+.gr.sel .gb::before{background:color-mix(in srgb,var(--ink) 15%,transparent)}
+.gr .gs{grid-area:3/1/4/3}
+.gr.off .gs b{font-weight:600;color:var(--ink)}
+.gr .sv{grid-area:4/1/5/3;flex-wrap:wrap;gap:0 .625rem;margin-top:.125rem}
+/* The one place a goal is added: a line at the foot of the list. */
+.addg{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem;margin-top:.5rem;padding-top:.75rem;border-top:1px solid var(--line)}
+.addg label{color:var(--goals)}
+.addg input{flex:1 1 12rem;min-width:0;min-height:2.5rem;padding:0 .875rem;border:1px solid var(--line);border-radius:.75rem;background:var(--well);text-overflow:ellipsis}
+.addg input::placeholder,.edit input::placeholder{color:var(--ink2)}
+.addg input:focus-visible,.edit input:focus-visible{outline:2px solid var(--goals);outline-offset:1px}
+.addg .fld{flex:1 1 12rem}
+/* The picked goal: why it matters, the verdict, the one plot, the next move and the last changes, and the way to change its target or date. */
+.detail{display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto auto;scroll-margin-top:.75rem}
+.dh{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.25rem 1rem}
+.src{display:flex;gap:.75rem}
+.src li{display:inline-flex;align-items:center;gap:.25rem;font-weight:600;color:var(--c)}
+.src .ic{width:.875rem;height:.875rem}
+.src a{position:relative;display:inline-flex;align-items:center;gap:.25rem;text-decoration:none}
+.src a::after{content:"";position:absolute;inset:-.75rem -.25rem}
+@media (hover:hover){.src a:hover{text-decoration:underline}}
+.why{margin-top:.75rem;padding-left:.75rem;border-left:2px solid var(--c);text-wrap:pretty}
+.dsay{margin-top:.75rem;font:var(--hl);letter-spacing:var(--hl-k);text-wrap:pretty}
+/* The one plot, the same for every goal. Time runs across from the start to the due date; the share of the way runs up from 0 to 100%. Solid is what's done, dashed the plan, dotted where this pace lands. Today is the upright line, and the landing is the open dot, named beside it. A unit never appears here. */
+.picw{display:grid;grid-template-rows:minmax(0,1fr);min-height:0}
+.pic{display:grid;grid-template-columns:2.75rem minmax(0,1fr);grid-template-rows:auto minmax(9rem,1fr) auto;margin-top:1rem;min-height:0}
+.key{grid-area:1/2;display:flex;flex-wrap:wrap;gap:.125rem 1rem}
+.key span{display:inline-flex;align-items:center;gap:.375rem}
+.key i{flex:none;width:1.25rem;height:0;border-top:2.5px solid var(--c);border-radius:2px}
+.key .kn{border-top:1.5px dashed var(--ink);border-radius:0;opacity:.6}
+.key .kp{border-top:2.5px dotted var(--c);border-radius:0}
+.yl,.plot{position:relative;margin-top:.5rem}
+.yl{grid-area:2/1}
+.yl span{position:absolute;right:.5rem;line-height:1;transform:translateY(-50%)}
+.plot{grid-area:2/2}
+.plot svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.plot path{fill:none;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
+.plot .ar{fill:color-mix(in srgb,var(--c) 12%,transparent)}
+.plot .gd{stroke:var(--line);stroke-width:1}
+.plot .bs{stroke:var(--rule);stroke-width:1}
+.plot .pn{stroke:var(--ink);stroke-width:1.5;stroke-dasharray:5 5;stroke-linecap:butt;opacity:.6}
+.plot .pc{stroke:var(--c);stroke-width:2.5;stroke-dasharray:.1 6}
+.plot .hs{stroke:var(--c);stroke-width:2.5}
+.plot>i{position:absolute}
+.due{top:0;bottom:0;border-left:1px dashed var(--rule)}
+.tdy{top:0;bottom:-.25rem;width:1px;margin-left:-.5px;background:var(--ink);opacity:.5}
+.pt{width:.625rem;height:.625rem;margin:-.3125rem 0 0 -.3125rem;border-radius:50%;background:var(--c);box-shadow:0 0 0 2px var(--solid)}
+.pt.land{background:var(--solid);border:2px solid var(--c);box-shadow:none}
+.pll{position:absolute;font:var(--ca);font-weight:600;letter-spacing:var(--ca-k);white-space:nowrap}
+.axl{grid-area:3/2;position:relative;height:1.125rem;margin-top:.375rem}
+.axl span{position:absolute;top:0}
+.axl .c{transform:translateX(-50%)}
+.axl .now{font-weight:600;color:var(--ink)}
+/* Under the plot: the next move, with the last changes beside it, then the target and the way to change it. */
+.btm{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:.75rem 2rem;margin-top:1rem;padding-top:.75rem;border-top:1px solid var(--line)}
+.blk>.lb{display:block;margin-bottom:.125rem}
+.nmv b{display:block;font:var(--hl);letter-spacing:var(--hl-k);text-wrap:pretty}
+.nmv b+span{display:block;color:var(--ink2);text-wrap:pretty}
+.chg li{display:flex;flex-wrap:wrap;gap:0 .5rem}
+.chg b{font-weight:600}
+.chg span{color:var(--ink2)}
+.ft{margin-top:.75rem;padding-top:.125rem;border-top:1px solid var(--line)}
+.meta,.edit{display:flex;flex-wrap:wrap;align-items:center;gap:0 .75rem;min-height:2.5rem}
+.meta [data-meta]{color:var(--ink)}
+.edit{gap:.25rem .75rem}
+.edit input{flex:0 1 18rem;min-width:0;min-height:2.25rem;padding:0 .75rem;border:1px solid var(--line);border-radius:.625rem;background:var(--well)}
+.edit .fld{flex:0 1 18rem}
+/* Goals, just installed. On the left the list is empty: what will line up there, the field that adds a goal, and three examples that fill it. On the right, the one plot every goal gets, explained: a faint drawing of its three lines with no dates and no figures. */
+.list.new{grid-template-rows:auto auto minmax(0,1fr) auto auto}
+.list.new .rows:empty{margin-top:0}
+.list .es{align-self:center}
+.detail.new{grid-template-rows:minmax(0,1fr)}
+.d0{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;min-height:0;--c:var(--goals)}
+.d0 .say0{margin-top:.75rem;text-wrap:pretty}
+.d0 .pic{grid-template-rows:auto minmax(7.5rem,1fr) auto}
+.d0 .plot svg,.d0 .plot>i{opacity:.4}
+.d0 .via{margin-top:.5rem}
+
+/* Widths. The page beside Claude's panel is about 1050 wide; a wide window gets a larger type size; a phone stacks. */
+@media (min-width:1700px){html{font-size:18px}.wrap{max-width:1720px}}
+/* Beside Claude's panel the sun crosses between Home's greeting and the line of the day. */
+@media (min-width:840px) and (max-width:1399px){.head{--x0:340px;--xs:calc(100% - 700px);--rise:24px;--d:18px;--halo:88px}}
+/* Where a goal's column on Home is too narrow for both, the pace word and the next move stay and the figure goes. */
+@media (min-width:840px) and (max-width:999px){.gl5 .dt{display:none}.gl5.few .dt{display:inline}}
+/* Home's band with one or two goals: each row spans the tile, and a quiet line invites the next goal. */
+.panes.one{grid-template-columns:minmax(0,1fr)}
+/* The detail's next step in full weight, its why under it. */
+.dnext{font:var(--bo);letter-spacing:var(--bo-k);font-weight:600;margin:0}
+.dnext span{display:block;font-weight:400;opacity:.8}
+.detail .acts{justify-content:flex-start;margin-top:.5rem}
+/* A missed goal's step is the line its date field opens in place of, in the step's own look. */
+.dstep .acts.meta{min-height:0;gap:.25rem .75rem}  /* one goal: its detail alone, the list not drawn */
+.gq{margin-top:1rem;font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2);text-wrap:pretty}
+@media (max-width:999px){
+  .row{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:839px){
+  .head{padding:1.5rem 0 3rem;--x0:16px;--xs:calc(100% - 32px);--rise:22px;--d:18px;--halo:88px}
+  .gband{grid-template-columns:minmax(0,1fr);row-gap:1rem}
+  .gt{display:flex;flex-wrap:wrap;align-items:baseline;gap:.25rem 1rem}
+  .tally{margin-top:0}
+  .tally b{display:inline}
+  .gl5{grid-template-columns:repeat(var(--n3,3),minmax(0,1fr));row-gap:1.5rem}
+  .strip{grid-template-columns:minmax(0,1fr)}
+  .qs,.sgs,.duo{grid-template-columns:minmax(0,1fr)}
+  .panes{grid-template-columns:minmax(0,1fr)}
+  .pic{grid-template-rows:auto 11rem auto}
+}
+/* At 750 beside the chat, the sun and moon's arc sits to the right of the greeting, and the strip under the quote goes:
+   the arc hangs from the header's top. */
+@media (min-width:681px) and (max-width:839px){
+  .head{padding-bottom:0;--x0:calc(100% - 190px);--xs:170px;--rise:26px}
+  .head .sun{bottom:auto;top:calc(3.75rem - var(--sy,.5)*var(--rise) + var(--sk,0)*var(--d)*1.3)}
+  .head .moon{bottom:auto;top:calc(3.75rem - var(--my,.5)*var(--rise))}
+}
+@media (max-width:799px){
+  .top{grid-template-columns:minmax(0,1fr)}
+  .quote{text-align:left;text-wrap:pretty}
+  .gl5{grid-template-columns:repeat(var(--n2,2),minmax(0,1fr))}
+}
+@media (max-width:699px){.gdock{display:none}}
+@media (max-width:680px){.dayw{position:static;flex:none;width:0;margin:0}.day{position:fixed;z-index:9;left:1rem;right:1rem;top:auto;bottom:1rem;max-width:none;background:var(--solid);box-shadow:var(--sh)}}
+@media (max-width:680px){
+  .sky{--p1:58%;--p2:84%}
+  .web{margin-top:1.5rem}
+  .gl5{grid-template-columns:minmax(0,1fr);row-gap:.5rem}
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .crumb{padding-top:1.5rem}
+  .gl2,.row{grid-template-columns:minmax(0,1fr)}
+  /* On a phone an app page's Claude asks sits closer to its edge; Home's and Goals' keep their room, as each target has it. */
+  .sec,main.pg .asks{padding:1rem}
+  main.pg .panes~.asks:not(.quiet){padding:1.5rem}
+  .undo,.lk{min-height:44px}
+  .mf>label:first-child{flex:1 0 100%}
+  .pk{min-height:2.75rem}
+  .pk::before{inset:0}
+  /* On a phone a row's name and its count share a line, and its fourteen marks run under them. */
+  .wkm{gap:.75rem}
+  .mr{grid-template-columns:minmax(0,1fr) auto;gap:.375rem .75rem}
+  .mr .dz,.mr .ins,.mr .ax{grid-column:1/-1}
+  .mr .dz,.mr .ins{grid-row:2}
+  .mr.wd>:not(.dz),.mr.axr>:not(.ax){display:none}
+  .mr.wd .dz,.mr.axr .ax{grid-row:1}
+  .rc{margin-top:0}
+  .yl,.plot{margin-top:1.875rem}
+  .btm{grid-template-columns:minmax(0,1fr)}
+  .addg label{flex:1 0 100%}
+  .addg input,.edit input{min-height:44px}
+  .conn{padding:1rem}
+  .cg{grid-template-columns:minmax(0,1fr);row-gap:.375rem}
+  .cg ul+h3{margin-top:.5rem}
+  .cg>.drop{grid-column:auto;margin-top:.5rem}
+  .foot{padding:.75rem 1rem}
+  .t.e0{padding:.25rem 1rem 1rem}
+  .cta,.alt,.eg,.cn.nc .cta{min-height:44px}
+  .asks.quiet{padding:1rem}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+@media (prefers-reduced-transparency:reduce){.t,.plate,.sp{-webkit-backdrop-filter:none;backdrop-filter:none}:root{--tile:#f5f6f8}:root[data-theme=dark]{--tile:#1c1e25}}
+@media (prefers-contrast:more){:root{--tile:#fff;--ink2:var(--ink);--edge:var(--rule)}:root[data-theme=dark]{--tile:#101116}}
+/* Goals' page built out: day zero's faint rows, What counts your
+   goals a row a line, the quiet actions, the goals done and set aside, and what got in the way. */
+.rows.faint{opacity:.4}
+.rows.faint .gr{min-height:2.75rem}
+.conn>.cn{margin-top:.5rem;grid-template-columns:minmax(0,1fr)}
+.conn>.cn .cta{grid-column:2;justify-self:start;margin-top:.25rem}
+.cn a.cta{color:color-mix(in srgb,var(--c,var(--goals)) 82%,var(--ink))}
+.cn a.cta:hover{text-decoration:none}
+.ft .qa{display:flex;flex-wrap:wrap;gap:0 1rem}
+.list .eh{font:var(--ca);letter-spacing:var(--ca-k);font-weight:600;color:var(--ink2);margin:1.25rem 0 0}
+.rows.ended .gr{padding:.5rem}
+.rows.ended .gn{font:var(--bo);letter-spacing:var(--bo-k)}
+.rows.ended .bb{grid-area:1/2;z-index:1}
+.detail .dsaid{margin:.5rem 0 .375rem;padding-left:.75rem;border-left:2px solid var(--line);color:var(--ink2);text-wrap:pretty}
+/* The Shop: a card per page you can add, in the tile's look. */
+section.shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,36rem),1fr));gap:var(--gap);container:shop/inline-size}  /* the section, not the rail's a.shop */
+.sc{display:grid;align-content:start;padding:var(--pad)}
+.sc .via{margin-top:.375rem}
+/* The Shop's buying states: where a page stands at its header's end, what was said under it,
+   and the foot with its key. */
+.sc .ch{gap:.5rem}.sc .st{margin-left:auto}
+.sc h2{display:flex;align-items:center;gap:.5rem;min-width:0;font:var(--ti);letter-spacing:var(--ti-k);color:var(--c)}.sc h2 .ic{flex:none;width:1.25rem;height:1.25rem}
+.sc .said{margin-top:.5rem}.sc .said:empty,.sf .said:empty{display:none}
+.sf{display:grid;gap:.5rem;margin-top:var(--gap);padding:var(--pad)}.sf .via+.via{margin-top:-.375rem}  /* the foot's lines together, quiet */.sf label{font:var(--ca);font-weight:600;letter-spacing:var(--ca-k)}
+.sf .fld{max-width:32rem}.sf input{min-width:0;min-height:44px;padding:0 .875rem;border:1px solid var(--line);border-radius:.75rem;background:var(--well);text-overflow:ellipsis}
+.sf input:focus-visible{outline:2px solid var(--ink);outline-offset:1px}.sc[aria-busy=true] .st{color:var(--ink)}
+/* While they said no to the morning review, the suggestion places say how to turn it on: quiet, in the
+   secondary ink, where the suggestion would be. */
+.nrv{color:var(--ink2);text-wrap:pretty}[data-block]>.t.nrv{margin-top:var(--gap);padding:.75rem 1.25rem;font:var(--ca);letter-spacing:var(--ca-k)}  /* under the cards, on a tile, never on the sky */
+.sec>.nrv{margin-top:.5rem}.dnext.nrv{font-weight:400}.card .sg.nrv{font:var(--ca);letter-spacing:var(--ca-k)}
+/* Goals' one offer, under its goal in Home's band: the question in the band's own type, then its two picks. */
+.gband li .ask{margin-top:.5rem;gap:.25rem;cursor:auto}.gband .g0l li .ask,.gband .gl2 li .ask{margin-top:.375rem}.gband li .ask .q{font:var(--ca);font-weight:600;letter-spacing:var(--ca-k)}
+.gband li .ask .picks{margin-top:.125rem}.gband li .ask .sv,.gband li .ask .msg{font:var(--ca);letter-spacing:var(--ca-k)}
+/* The Shop's card: its picture of the page, made-up, in the theme that's showing, small; and its price. */
+.spic{display:block;margin:.625rem 0 .125rem}.spic img{display:block;width:100%;max-width:20rem;height:auto;aspect-ratio:450/312;border-radius:.75rem;border:1px solid var(--line);background:var(--well)}
+:root[data-theme=dark] .spic img[data-for=light],:root:not([data-theme=dark]) .spic img[data-for=dark]{display:none}
+.sc .price{margin-top:.625rem;font:var(--hl);letter-spacing:var(--hl-k)}
+/* Five pages, calm at 750: the card's buttons in a row; where the Shop is wide enough (750 beside the
+   chat, and up), the picture beside the words, their tops in line; a page in the rail one slim row at the end, its name
+   and "In your rail", and one with an update ready only its Update. */
+.sc .act0{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .75rem}
+@container shop (min-width:34rem){
+  .sc:has(>.spic){grid-template-columns:16rem minmax(0,1fr);column-gap:1.25rem;align-items:start}
+  .sc>.ch{grid-column:1/-1}.sc>.spic{margin:.75rem 0 0}.sc:has(>.spic)>.sw{margin-top:.75rem}.sc:has(>.spic)>.sw>.say:first-child{margin-top:0}
+}
+section.shop .sc[data-state=in-rail],section.shop .sc[data-state=update]{grid-column:1/-1;grid-template-columns:minmax(0,1fr)}section.shop .sc[data-state=in-rail]>.sw,section.shop .sc[data-state=update]>.sw{margin-top:0}
+section.shop .sc[data-state=in-rail]>.spic,section.shop .sc[data-state=in-rail]>.sw>:not(.said),section.shop .sc[data-state=update]>.spic,section.shop .sc[data-state=update]>.sw>:not(.act0,.said){display:none}
+/* The paid pages' shared blocks. A list: each row its title and a quiet tag, then
+   its line, when and note in words, its move, its link and one button, rows apart by a hairline. A block's own lead and
+   its why. An item's own buttons in a row, with a read-back's Confirm and Cancel in their place. */
+.lst{display:grid;margin:.5rem 0 0;padding:0;list-style:none}
+.lst>.lr{display:grid;gap:.125rem;padding:.75rem 0;border-top:1px solid var(--line)}.lst>.lr:first-child{border-top:0;padding-top:.25rem}
+ol.lst{counter-reset:lr}ol.lst>.lr{grid-template-columns:1.5rem minmax(0,1fr);column-gap:.5rem;counter-increment:lr}ol.lst>.lr>*{grid-column:2}
+ol.lst>.lr::before{content:counter(lr);grid-column:1;grid-row:1;font:var(--hl);letter-spacing:var(--hl-k);color:var(--ink2);font-variant-numeric:tabular-nums}
+.lt{display:flex;flex-wrap:wrap;align-items:baseline;gap:.125rem .5rem;font:var(--hl);letter-spacing:var(--hl-k);text-wrap:pretty}.lt b{font-weight:600}
+.ltag{padding:0 .5rem;border-radius:999px;background:color-mix(in srgb,var(--c,var(--app)) 12%,transparent);font:var(--ca);font-weight:600;letter-spacing:var(--ca-k);color:var(--c,var(--app))}
+.ll{text-wrap:pretty}.lw{font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2)}.lnote{font:var(--ca);font-weight:600;letter-spacing:var(--ca-k)}
+.lr .mv{margin-top:.375rem;font:var(--bo);letter-spacing:var(--bo-k);color:var(--ink);text-wrap:pretty}.lr .mv b{display:block;font-weight:600}
+.lend{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem 1rem;margin-top:.375rem}.lend .lact{margin-top:0}
+.llink{font:var(--ca);letter-spacing:var(--ca-k)}.llink a{color:var(--ink2);text-decoration:underline;text-underline-offset:3px}
+.lwhy{margin-top:.125rem;font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2);text-wrap:pretty}
+.lact{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .75rem;margin-top:.375rem}.lact [role=status]{font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2)}
+.rd .lnote{margin-top:.5rem}.rd .lact{margin-top:.75rem}
+/* A bar a month (People's Your rhythm): its series stacked, the first at the foot, the lit months in the page's colour,
+   the months named under the bars, and the key under them. */
+.mo{--ph:5.5rem}.mo .pl{grid-template-columns:repeat(var(--n),minmax(0,1fr))}
+.mo .pl .mb{display:flex;flex-direction:column-reverse;overflow:hidden;width:56%;background:none}.mo .pl .mb b{display:block;flex:0 0 calc(var(--s)*100%)}
+.mo .m0{background:var(--bar)}.mo .m1{background:color-mix(in srgb,var(--bar) 45%,transparent)}
+.mo .a .m0{background:var(--c,var(--app))}.mo .a .m1{background:color-mix(in srgb,var(--c,var(--app)) 45%,transparent)}
+.mx{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));margin-top:.125rem;text-align:center}
+.mk{display:flex;flex-wrap:wrap;gap:.25rem .75rem;margin-top:.375rem;white-space:normal}.mk span{display:inline-flex;align-items:center;gap:.3125rem}
+.mk i{flex:none;width:.75rem;height:.75rem;border-radius:.1875rem}.mk .m0{background:var(--c,var(--app))}.mk .m1{background:color-mix(in srgb,var(--c,var(--app)) 45%,transparent)}
+.mk .rk{height:0;border-top:1px dashed var(--ink2);border-radius:0}
+/* A row's measures against its usual (Content's videos): its label and standing in words, then the hairline, the usual's
+   middle half as a band (ghosted while it forms), a tick at the median and a dot at the video. */
+.msr{display:grid;gap:.375rem;margin:.5rem 0 0;padding:0;list-style:none}
+.msr li{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:.25rem .75rem}
+.mlb{font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2);text-wrap:pretty}.mlb b{font-weight:600;color:var(--ink)}
+.mline{position:relative;height:1rem}.mline::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px solid var(--rule)}
+.mband{position:absolute;top:calc(50% - .25rem);left:calc(var(--a)*100%);width:calc((var(--b) - var(--a))*100%);height:.5rem;border-radius:.25rem;
+  background:color-mix(in srgb,var(--c,var(--app)) 24%,transparent)}
+.mband.g{left:0;width:100%;background:repeating-linear-gradient(90deg,var(--line) 0 .25rem,transparent .25rem .5rem)}
+.mtick{position:absolute;top:calc(50% - .375rem);left:calc(var(--x)*100%);height:.75rem;border-left:1.5px solid var(--ink2)}
+.mdot{position:absolute;top:calc(50% - .3125rem);left:calc(var(--x)*100% - .3125rem);width:.625rem;height:.625rem;border-radius:50%;background:var(--c,var(--app));
+  box-shadow:0 0 0 2px var(--solid)}
+@media (max-width:559px){.msr li{grid-template-columns:minmax(0,1fr)}}
+/* The layout-changed bar: at the foot of the window while the page is read, the change in one line, Keep and Undo;
+   each changed block outlined, dashed, in the page's colour. */
+.lbar{position:sticky;bottom:1rem;z-index:6;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1rem;margin-top:var(--gap);padding:.75rem 1.25rem;
+  box-shadow:inset 0 1px 0 var(--gloss),0 14px 32px -12px var(--shade)}
+.lbar .lch{flex:1 1 16rem;font:var(--hl);letter-spacing:var(--hl-k);text-wrap:pretty}.lbar .act0{display:flex;flex-wrap:wrap;gap:.25rem .75rem;margin:0}
+.lbar .said{flex-basis:100%;margin:0}.lbar .said:empty{display:none}
+[data-block].changed{outline:2.5px dashed var(--c,var(--app));outline-offset:3px;border-radius:var(--r)}
+/* A table (Research's projects by its six questions): real headers, each cell's mark by its state's place in the key
+   (dashed, hatched, filled in the page's colour) with its state in words for VoiceOver, its few words beside it; a
+   narrow page scrolls it in its own box. */
+.tblw{margin-top:.5rem;overflow-x:auto}.tbl{width:100%;border-collapse:collapse;font:var(--bo);letter-spacing:var(--bo-k)}
+.tbl th,.tbl td{padding:.5rem;text-align:left;vertical-align:top;border-top:1px solid var(--line)}.tbl thead th,.tbl thead td{border-top:0}
+.tbl thead th{font:var(--ca);font-weight:600;letter-spacing:var(--ca-k);color:var(--ink2)}.tbl th[scope=row]{font:var(--hl);letter-spacing:var(--hl-k);min-width:8rem}
+.tcm{display:inline-block;flex:none;width:.875rem;height:.875rem;margin-right:.375rem;border-radius:.25rem;vertical-align:-.125rem}
+.s0 .tcm{border:1.5px dashed var(--rule)}.s1 .tcm{border:1.5px solid var(--c,var(--app));background:repeating-linear-gradient(135deg,var(--c,var(--app)) 0 1.5px,transparent 1.5px 4px)}
+.s2 .tcm{border:1.5px solid var(--c,var(--app));background:var(--c,var(--app))}
+.tcw{font:var(--ca);letter-spacing:var(--ca-k)}.tact .lact{margin-top:0}
+.tkey{display:flex;flex-wrap:wrap;gap:.25rem 1rem;margin-top:.5rem;font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2)}
+/* Help: plain answers at a reading width, the report shown whole before it's copied, and the two
+   lines about Claude and Anthropic quiet under them. */
+.hp>section,.hp>.ai{max-width:46rem}.hq{margin-top:1.25rem;font:var(--ti);letter-spacing:var(--ti-k)}.hq:first-child{margin-top:0}
+.ha{margin-top:.25rem;text-wrap:pretty}.rep{margin-top:.75rem}
+.rept{max-height:20rem;overflow:auto;padding:.75rem;border:1px solid var(--line);border-radius:.75rem;background:var(--well);font:var(--ca);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.rept:focus-visible{outline:2px solid var(--ink);outline-offset:2px}.foot.ai{margin-top:var(--gap)}
+/* On Home: a newer Hydra-OS in one quiet line, and What's new once after an update, at the top of the grid. */
+.t.upd{margin-bottom:var(--gap);padding:.75rem 1.25rem;font:var(--bo);letter-spacing:var(--bo-k);text-wrap:pretty}.t.wn{margin-top:0;margin-bottom:var(--gap)}
+.hl{margin:.25rem 0 0;padding-left:1.25rem;display:grid;gap:.25rem;list-style:disc}.hl li{text-wrap:pretty}.hl li::marker{color:var(--ink2)}.hl .hl{list-style:circle}.hp a[data-open]{text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
+/* Where this comes from, one list: a newer file's place sits under the list, with room above it. */
+.conn>.drop{margin-top:.75rem}
+/* Finishing touches: a button scales to .97 as it's pressed, and with reduced transparency the
+   tiles and the rail are solid. */
+button:not(.cta):not(:disabled):active{scale:.97}
+@media (prefers-reduced-motion:reduce){button:not(.cta):active{scale:none}}
+@media (prefers-reduced-transparency:reduce){.t,.rail .nav{background:var(--solid);-webkit-backdrop-filter:none;backdrop-filter:none}}
+/* Help: its rows, each a name and a line with its one button at the end; then
+   "Questions", quiet, each opening its answer on a tap. */
+.hrows{display:grid;margin:0;padding:0;list-style:none}
+.hrows .hr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.25rem 1rem;align-items:center;padding:.875rem 0;border-top:1px solid var(--line)}
+.hrows .hr:first-child{border-top:0;padding-top:.25rem}.hrows .hr:last-child{padding-bottom:.25rem}
+.hrows b{font:var(--hl);letter-spacing:var(--hl-k)}
+.hrows p{margin-top:.125rem;font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2);text-wrap:pretty}
+.hrows .rep,.hrows .said{grid-column:1/-1}.hrows .said:empty{display:none}
+.hq0{margin:0 0 .25rem;font:var(--ca);font-weight:600;letter-spacing:var(--ca-k);color:var(--ink2)}
+details.qa{border-top:1px solid var(--line)}details.qa:first-of-type{border-top:0}
+details.qa summary{display:flex;justify-content:space-between;align-items:center;gap:1rem;min-height:2.75rem;padding:.5rem 0;font:var(--bo);
+  font-weight:600;letter-spacing:var(--bo-k);cursor:pointer;list-style:none}
+details.qa summary::-webkit-details-marker{display:none}
+details.qa summary::after{content:"";flex:none;width:.5rem;height:.5rem;margin-right:.25rem;border-right:1.75px solid var(--ink2);
+  border-bottom:1.75px solid var(--ink2);rotate:45deg;translate:0 -.125rem;transition:rotate .2s ease}
+details.qa[open] summary::after{rotate:225deg;translate:0 .125rem}
+details.qa summary:focus-visible{outline:2px solid var(--goals);outline-offset:2px;border-radius:.25rem}
+details.qa .ha{margin:0;padding:0 0 .875rem}
+@media (prefers-reduced-motion:reduce){details.qa summary::after{transition:none}}

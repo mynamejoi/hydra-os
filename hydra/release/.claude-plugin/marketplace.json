@@ -1,0 +1,27 @@
+{
+  "name": "hydra-os",
+  "owner": {
+    "name": "Hydra-OS"
+  },
+  "description": "The pages hydra-setup puts in your Hydra-OS folder's own store.",
+  "plugins": [
+    {
+      "name": "hydra",
+      "source": "./hydra/1.0.0",
+      "version": "1.0.0",
+      "description": "Hydra-OS itself: it sets up your Hydra-OS folder, serves Home and each of your pages, and starts each page's daily read"
+    },
+    {
+      "name": "goals",
+      "source": "./goals/0.2.1",
+      "version": "0.2.1",
+      "description": "What you're working toward, with each goal's pace from the app that measures it"
+    },
+    {
+      "name": "health",
+      "source": "./health/1.0.0",
+      "version": "1.0.0",
+      "description": "Sleep, heart rate and what's moving them, from your Apple Health export or a file of days. Suggestions with their reason, never a diagnosis, a medicine, a supplement or a dose"
+    }
+  ]
+}
