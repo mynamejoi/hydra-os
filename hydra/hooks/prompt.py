@@ -3,7 +3,8 @@
 
 1. The secret guard. A message holding what looks like a password or a key is blocked: it never reaches Claude, the
    person is told why and where it goes instead, and nothing else happens, no focus and no log.
-2. The focus hook (hydralib/context.py): one block of page context, given as data, and one `asked` log line.
+2. The focus hook (hydralib/context.py): one block of page context, given as data, and one `asked` log line; then,
+   after the data, what to do with each tap still open there (context.taps).
 
 It runs before anything is imported from the plugin's library, so the guard stands even when the rest can't load.
 The message's words are never written anywhere. Python 3.9 standard library only, run as python3 -I.
@@ -61,7 +62,11 @@ def main():
             news = context.since(root) if root else ""
         except Exception:
             news = ""
-        block = "\n".join(t for t in (step, news, block) if t)
+        try:  # what to do with each open tap, as guidance after the data
+            taps = context.taps(root) if root and block else ""
+        except Exception:
+            taps = ""
+        block = "\n".join(t for t in (step, news, block, taps) if t)
     if block:
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": block}}))
     return 0

@@ -7,8 +7,8 @@
   "plugins": [
     {
       "name": "hydra",
-      "source": "./hydra/1.0.1",
-      "version": "1.0.1",
+      "source": "./hydra/1.0.2",
+      "version": "1.0.2",
       "description": "Hydra-OS itself: it sets up your Hydra-OS folder, serves Home and each of your pages, and starts each page's daily read"
     },
     {

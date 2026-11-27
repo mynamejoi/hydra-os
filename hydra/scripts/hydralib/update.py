@@ -459,6 +459,28 @@ def went_through(lines):
     return any(last == (said % last.split(" ")[1]) for said in (UP_TO_DATE, DONE)) if last.count(" ") >= 2 else False
 
 
+READY = "Hydra-OS %s is ready. What's new:"
+PAGE_READY = "%s %s is ready."
+
+
+def check(config, env=None, now=None):
+    """hydra update --check: what hydra update would bring, from the shop's signed catalog read fresh, changing nothing
+    else: Hydra-OS's next version and its notes, or that it's up to date, then each page added from the shop that has a
+    newer version. The shop's own line when it can't be read or doesn't check out."""
+    root = config["root"]
+    env = os.environ if env is None else env
+    have = str((registry.app(root, registry.MAIN) or {}).get("version") or "")
+    got = shop.read_catalog(config, now=_now(now), force=True, env=env)
+    if got in ("none", "offline", "refused"):
+        return [{"none": NO_SHOP, "offline": OFFLINE, "refused": NOT_CHECKED}[got]]
+    want = shop.catalog(root, env).get("core") or {}
+    if want.get("version") and shop.vt(want["version"]) > shop.vt(have):
+        out = [READY % want["version"]] + ["- %s" % n for n in want.get("notes") or []]
+    else:
+        out = [UP_TO_DATE % have]
+    return out + [PAGE_READY % (p["title"], p["version"]) for p in shop.state(root)["pages"] if p["state"] == "update"]
+
+
 def core(config, env=None, now=None, load=None):
     """The lines hydra update says for Hydra-OS itself; Stop's line when it stopped."""
     try:

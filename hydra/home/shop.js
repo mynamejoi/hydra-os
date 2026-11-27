@@ -8,7 +8,7 @@
   'use strict';
   const kit = window.HydraKit;
   if (!kit || !kit.live) return;
-  const { $, $$, send, tip, keep } = kit;
+  const { $, $$, send, tip, keep, mend } = kit;
   const cards = $$('.sc[data-page]'), foot = $('#shop-said'), key = $('#shop-key'), add = key && key.parentElement.querySelector('.save');
   const built = new Map(cards.map(c => [c.dataset.page, c.dataset.state]));
   const railed = s => s === 'in-rail' || s === 'update';
@@ -18,7 +18,11 @@
                  adding: (c, p) => `${p.have ? 'Updating' : 'Adding'} ${c.dataset.title}\u2026` };  // said once, on the card
   let working = '', out = null;  // the page being added or updated ('?' until the server names it), and where its line goes
 
-  { const was = keep.get('hydra-shop-said'); keep.set('hydra-shop-said', null); if (foot && typeof was === 'string') foot.textContent = was; }
+  { const was = keep.get('hydra-shop-said'); keep.set('hydra-shop-said', null); if (foot && typeof was === 'string') foot.textContent = was;
+    /* the page a key just added: its Set up under the foot's answer, as on its card */
+    const next = keep.get('hydra-shop-next'), box = $('#shop-next'); keep.set('hydra-shop-next', null);
+    const set = typeof next === 'string' && $$('.sc[data-page] .su [data-kind=setup]').find(b => b.dataset.app === next);
+    if (box && set) { box.append(set.cloneNode(true)); box.hidden = false; } }
 
   const draw = d => cards.forEach(c => {
     const p = d.pages.find(x => x && x.id === c.dataset.page); if (!p) return;
@@ -44,16 +48,17 @@
     const fresh = d.pages.find(x => x && x.state === 'in-rail' && built.has(x.id) && !railed(built.get(x.id)));
     if (fresh && keep.get('hydra-shop-opened') !== fresh.id) {  // newly in the rail: the Shop again, so the rail shows it
       keep.set('hydra-shop-opened', fresh.id);
-      keep.set('hydra-shop-said', said);
+      keep.set('hydra-shop-said', said); keep.set('hydra-shop-next', fresh.id);
       keep.set('hydra-keep', { path: location.pathname, y: scrollY, id: '', back: null, at: Date.now() });
       location.reload();
       return;
     }
-    (out || foot).textContent = said;
+    (out || foot).textContent = said; mend(out || foot, d, '');  /* Repair beside it, when Hydra-OS's store needs it */
   });
 
   const start = (path, body, where) => send('POST', path, body).then(a => {
     out = where;
+    mend(where, a, '');
     if (a && a.ok) { where.textContent = ''; working = body.id || '?'; look(); return; }  // the card says it's adding, once
     where.textContent = a && typeof a.said === 'string' && a.said ? a.said
       : path === '/api/shop/key' ? 'Not sent. Paste the key in the chat beside this page.' : 'Not sent. Try again in a moment.';

@@ -8,6 +8,7 @@ instruction stays inside its quotes and never changes what's said outside them.
   primer(root)           at most 4,000 characters, in seven parts, with only the quoted data between marker lines
   next_step(root)        the first session's next unfinished step: goal, connect, review or done
   focus(root, now)       at most 600 characters, or "" when there's nothing to say; it moves seen.json on and logs
+  taps(root, now)        guidance after the page context for each open tap Claude acts on, or ""
                          one `asked` line, with the app and block when focus is fresh
 """
 import datetime
@@ -334,8 +335,7 @@ def primer(root):
               "the morning review task's own: run it only when that task's prompt asks. When they want the review now, "
               "start the \"%s\" task now with the Claude app's own scheduled-task tool, so it runs in its own session. "
               "hydra helpers on or off sets whether its two helpers start at login: say what changes, and run it only "
-              "after their yes. Repair on Help is for Hydra-OS itself: hydra report says how each part stands. Fix "
-              "what's wrong after their yes, say what you changed, then hydra panel done <its request id>." % think.NAME)
+              "after their yes." % think.NAME)
     notes = ""
     try:
         with open(os.path.join(root, "yours", "claude.md"), encoding="utf-8") as f:
@@ -407,9 +407,39 @@ def _request_line(r, titles, root=None):
     if r.get("kind") == "about":  # "Ask Claude about it" on a Shop card
         return "- They tapped Ask Claude about it for %s on the Shop page. Its request id is %s." % (
             q(catalog.title(root, r.get("app")) or r.get("app", "")), r.get("id", ""))
+    if r.get("kind") == "setup":  # Set up on a page just added
+        title = titles.get(r.get("app"), r.get("app", ""))
+        return "- They tapped Set up on %s: %s Its request id is %s." % (q(title), q("Set up %s." % title), r.get("id", ""))
+    if r.get("kind") == "update":  # Update on Home, for Hydra-OS itself
+        return '- They tapped Update on Home: "Update Hydra-OS." Its request id is %s.' % r.get("id", "")
+    if r.get("kind") == "remove":  # "Remove Hydra-OS…" on Help
+        return '- They tapped Remove Hydra-OS on Help: "Remove Hydra-OS." Its request id is %s.' % r.get("id", "")
     if not r.get("app"):  # Help's Repair, for Hydra-OS itself
         return '- They tapped Repair on Help: "Repair Hydra-OS." Its request id is %s.' % r.get("id", "")
     return "- They tapped Repair on %s. Its request id is %s." % (app, r.get("id", ""))
+
+
+TAPS = {  # what Claude does with each kind of tap, said outside the page context, only while one is open
+    "repair": "Repair on Help is for Hydra-OS itself: hydra report says how each part stands; fix what's wrong after "
+              "their yes, and say what you changed.",
+    "setup": "Set up: lead hydra setup <its page> and its steps, asking before each change.",
+    "update": "Update on Home: hydra update --check says what's new; run hydra update only after their yes.",
+    "remove": "Remove Hydra-OS on Help: ask first, as hydra remove hydra does.",
+}
+TAPS_OPEN = "Guidance for the taps in the page context:"
+TAPS_DONE = "Once one is done, or they say no, run hydra panel done <its request id>."
+
+
+def taps(root, now=None):
+    """Guidance for this message's open taps, outside the page context's data: what Claude does with each kind open
+    (Repair on Help, naming no page; Set up; Update; Remove Hydra-OS), then how it's closed. "" with none of them open."""
+    now = now or datetime.datetime.now().astimezone()
+    kinds = []
+    for r in panel.open_requests(root, now):
+        kind = r.get("kind")
+        if kind in TAPS and kind not in kinds and not (kind == "repair" and r.get("app")):
+            kinds.append(kind)
+    return " ".join([TAPS_OPEN] + [TAPS[k] for k in kinds] + [TAPS_DONE]) if kinds else ""
 
 
 def focus(root, now=None):

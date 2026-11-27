@@ -116,15 +116,13 @@
   ],
   "foot": "Paid once, updates included. Works with your own Claude plan.",
   "core": {
-    "version": "1.0.1",
-    "zip": "hydra-1.0.1.zip",
-    "sha256": "782af6151deac8376e5d54153ba4fbb4c40ca0751b97fb96e7061ad91352b7dc",
+    "version": "1.0.2",
+    "zip": "hydra-1.0.2.zip",
+    "sha256": "4a2c3343ed80728b680910b832ff25a7e9afb923d6a67713e6a5493500521b25",
     "notes": [
-      "Adding a page, explained. Help now says how to add a page from the Shop, and how to set it up after.",
-      "The Shop at once. On a new Mac, Home's Shop shows its pages as soon as setup ends.",
-      "Setup in one step. Claude asks you once, then sets Hydra-OS up with a single command.",
-      "Tidier setup. Setup clears out what an older Hydra-OS left behind, by itself.",
-      "Repair from Help. Help's Repair button now reaches Claude, who finds what's wrong and fixes it after your yes."
+      "Buttons instead of phrases. Set up, Update, Repair and Remove are buttons now, and Claude takes it from there.",
+      "It mends itself. Each chat clears what an older Hydra-OS left, and puts the helpers right after a Mac update.",
+      "What's new first. Before an update, Claude tells you what it brings, then asks you."
     ]
   }
 }

@@ -171,10 +171,24 @@ def retire_others(config, home=None):
     return gone
 
 
+def untouchable():
+    """True under any HYDRA_TEST_ switch unless HYDRA_TEST_LAUNCHCTL names launchctl's stand-in: such a test asks
+    launchd nothing and touches no LaunchAgents folder, the person's own least of all."""
+    return any(k.startswith("HYDRA_TEST_") for k in os.environ) and not os.environ.get("HYDRA_TEST_LAUNCHCTL")
+
+
+def loader(home=None):
+    """The way to load jobs: launchctl itself, or, under HYDRA_TEST_LAUNCHCTL, its stand-in (test_load)."""
+    record = os.environ.get("HYDRA_TEST_LAUNCHCTL")
+    return test_load(record, home or os.path.expanduser("~")) if record else load
+
+
 def retire_own(config, home=None):
     """With the helpers off, nothing starts at login: this build's own two jobs, Home's server's and the tick's, booted
     out where an older install left them loaded, and their plists removed. Returns {label: its state before} for each
     one it took away."""
+    if untouchable():
+        return {}
     folder = agents_folder(home)
     gone = {}
     for label in (config["server"]["label"], (config.get("tick") or {}).get("label")):

@@ -1,6 +1,6 @@
 # What Hydra-OS installs
 
-Everything Hydra-OS puts on your Mac, everything it runs, every address it reaches, and how to remove it. This is Hydra-OS 1.0.1.
+Everything Hydra-OS puts on your Mac, everything it runs, every address it reaches, and how to remove it. This is Hydra-OS 1.0.2.
 
 ## The folder
 
@@ -34,8 +34,8 @@ Every hook's first step returns at once unless the chat's folder is `~/Hydra-OS`
 
 Hydra-OS itself:
 
-- **SessionStart** (`hooks/primer.py`): a short note to Claude about your pages, given as data, not as instructions. It puts Hydra-OS's own tools first on the path for the chat's commands, and notes which Claude Code runs the chat (the hook's own parent process), so the chat's `hydra` steps use the same one; with none noted, they use the `claude` command on your path, if you have one, and Hydra-OS never looks anywhere else. With the helpers off, it starts Home's server and the tick once.
-- **UserPromptSubmit** (`hooks/prompt.py`): a message that looks like it holds a password or a key is stopped before Claude sees it, and you're told why. Otherwise, where you are on your pages, as data.
+- **SessionStart** (`hooks/primer.py`): a short note to Claude about your pages, given as data, not as instructions. It puts Hydra-OS's own tools first on the path for the chat's commands, and notes which Claude Code runs the chat (the hook's own parent process), so the chat's `hydra` steps use the same one; with none noted, they use the `claude` command on your path, if you have one, and Hydra-OS never looks anywhere else. It mends the helpers first: with them off, it takes away any launch agent of Hydra-OS's own that an older Hydra-OS left; with them on, when an Xcode or macOS update moved the Mac's Python, it points them at it again and starts them again. Then, with the helpers off, it starts Home's server and the tick once.
+- **UserPromptSubmit** (`hooks/prompt.py`): a message that looks like it holds a password or a key is stopped before Claude sees it, and you're told why. Otherwise, where you are on your pages, as data, and what to do with a button you tapped there.
 - **PreToolUse** (`hooks/review_fence.py`): only while the morning review runs, Claude may use only `hydra think` and the reads it lists.
 - **PostToolUse on WebSearch** (`hooks/review_keep.py`): only while the morning review runs, each search a page listed keeps its answer for that page.
 - **SessionEnd** (`hooks/session_end.py`): the morning review's fence lifts when its chat ends; with the helpers off, Home's server stops after the last Hydra-OS chat.

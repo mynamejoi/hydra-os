@@ -119,8 +119,20 @@
   };
   const act = (app, action, fields, token) => send('POST', `/api/act/${encodeURIComponent(app)}/${encodeURIComponent(action)}`, token ? { fields, token } : { fields })
     .then(a => a && typeof a.ok === 'boolean' ? { ok: a.ok, said: typeof a.said === 'string' ? a.said : '', undo: a.undo && typeof a.undo === 'object' ? a.undo : null,
-                                                  token: typeof a.token === 'string' ? a.token : '' } : { ok: false, said: '', undo: null, token: '' });
+                                                  token: typeof a.token === 'string' ? a.token : '', repair: a.repair === true } : { ok: false, said: '', undo: null, token: '', repair: false });
   const notSaved = a => 'Not saved.' + (a.said ? ' ' + a.said : '');
+  /* An answer Repair can mend ("repair": true) puts a Repair button beside its line, handing Claude the repair of the page
+     it's about, or of Hydra-OS itself on Home's own pages. Any answer that doesn't ask for it takes the button away. */
+  const mend = (line, a, app) => {
+    if (!line || !line.parentElement) return;
+    const next = line.nextElementSibling, had = next && next.classList.contains('rpr') ? next : null;
+    if (!a || a.repair !== true) { if (had) had.remove(); return; }
+    if (had) return;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'cta rpr'; b.dataset.connect = ''; b.dataset.kind = 'repair';
+    b.dataset.app = ['home', 'help', 'privacy', 'shop'].includes(app) ? '' : String(app || ''); b.textContent = 'Repair';
+    line.after(b);
+  };
   const flash = (el, text, ms) => { el.textContent = text; clearTimeout(el._t); if (ms) el._t = setTimeout(() => { if (el.textContent === text) el.textContent = ''; }, ms); };
   let busy = 0, holding = 0;  // holding: an item's Undo, or a read-back's Confirm, is showing, so the page doesn't reload under it
   const during = p => { busy++; const done = () => { busy--; }; p.then(done, done); return p; };
@@ -151,7 +163,7 @@
     const takeBack = () => {
       const f = last && last.undo ? last.undo : { question: id, ...(last && last.pick ? { pick: last.pick } : {}) };
       undo.disabled = true;
-      return during(act(app, 'unanswer', f)).then(a => { undo.disabled = false; if (!a.ok) flash(msg, 'Not put back.' + (a.said ? ' ' + a.said : '')); return a.ok; });
+      return during(act(app, 'unanswer', f)).then(a => { undo.disabled = false; mend(msg, a, app); if (!a.ok) flash(msg, 'Not put back.' + (a.said ? ' ' + a.said : '')); return a.ok; });
     };
     if (kind === 'words') {
       const inp = $('input', ask), fld = $('.fld', ask), said = $('.said', ask);
@@ -160,7 +172,7 @@
         const text = line(inp); if (!text || inp.disabled) return;
         inp.disabled = true; ask.setAttribute('aria-busy', 'true'); flash(msg, '');
         during(act(app, 'answer', { question: id, words: text })).then(a => {
-          inp.disabled = false; ask.removeAttribute('aria-busy');
+          inp.disabled = false; ask.removeAttribute('aria-busy'); mend(msg, a, app);
           if (!a.ok) { flash(msg, notSaved(a)); inp.focus(); return; }
           keep.set(key, text); remember({ undo: a.undo, at: Date.now() });
           inp.value = ''; sync(); fld.hidden = true; ans.hidden = false; said.textContent = text; undo.focus();  /* shown, then filled, so its live region says it */
@@ -185,7 +197,7 @@
           if (!one) f.on = want ? 'yes' : 'no';
           p.setAttribute('aria-busy', 'true'); flash(msg, '');
           during(act(app, 'answer', f)).then(a => {
-            p.removeAttribute('aria-busy');
+            p.removeAttribute('aria-busy'); mend(msg, a, app);
             if (!a.ok) { flash(msg, notSaved(a)); return; }
             const was = picks.filter(on).map(x => x.dataset.pick);
             if (one) picks.forEach(x => set(x, x === p));
@@ -229,7 +241,7 @@
       const text = line(inp); if (!text || inp.disabled) return;
       inp.disabled = true; ent.setAttribute('aria-busy', 'true');
       during(act(app, action, { ...fixed, [ent.dataset.field || 'words']: text })).then(a => {
-        inp.disabled = false; ent.removeAttribute('aria-busy');
+        inp.disabled = false; ent.removeAttribute('aria-busy'); mend(stat, a, app);
         if (!a.ok) { stat.textContent = notSaved(a); undo.hidden = true; inp.focus(); return; }
         const own = Object.fromEntries(Object.entries({ ...fixed, [ent.dataset.field || 'words']: text }).filter(([k]) => takes.includes(k)));
         const u = { key, said: a.said || 'Saved.', fields: a.undo || own, text, at: Date.now() };
@@ -242,7 +254,7 @@
     undo.addEventListener('click', () => {
       if (!mine) return; const u = mine; undo.disabled = true;
       during(act(app, back, u.fields)).then(a => {
-        undo.disabled = false;
+        undo.disabled = false; mend(stat, a, app);
         if (!a.ok) { stat.textContent = 'Not put back.' + (a.said ? ' ' + a.said : ''); return; }
         keep.set('hydra-undo', pending().filter(x => x.key !== key)); clearTimeout(timer); mine = null;
         undo.hidden = true; inp.value = u.text; inp.dataset.back = '1'; sync(); flash(stat, 'Put back.', 2000);
@@ -340,8 +352,9 @@
     if (c && !c.disabled) {
       const r = { kind: c.dataset.kind || 'connect', app: 'app' in c.dataset ? c.dataset.app : APP }; if (c.dataset.service) r.service = c.dataset.service;
       c.disabled = true;
-      const NOT = { connect: 'Not sent. Tell Claude what you use.', 'add-app': "Not sent. Tell Claude what you'd like here.", repair: "Not sent. Say 'repair Hydra-OS' to Claude.", review: 'Not sent. Tell Claude to turn on the morning review.',
-                    'helpers-on': "Not sent. Tell Claude to turn Hydra-OS's background helpers on.", 'helpers-off': "Not sent. Tell Claude to turn Hydra-OS's background helpers off.", about: 'Not sent. Ask Claude about it, in the chat beside this page.' };
+      const NOT = { connect: 'Not sent. Tell Claude what you use.', 'add-app': "Not sent. Tell Claude what you'd like here.", repair: 'Not sent. Try Repair again in a moment.', remove: 'Not sent. Try again in a moment.', review: 'Not sent. Tell Claude to turn on the morning review.',
+                    'helpers-on': "Not sent. Tell Claude to turn Hydra-OS's background helpers on.", setup: 'Not sent. Ask Claude to set it up, in the chat beside this page.',
+                    update: 'Not sent. Ask Claude to update Hydra-OS, in the chat beside this page.', 'helpers-off': "Not sent. Tell Claude to turn Hydra-OS's background helpers off.", about: 'Not sent. Ask Claude about it, in the chat beside this page.' };
       send('POST', '/api/request', r).then(a => { c.disabled = false; tip(c, a && a.ok ? 'Now say go to Claude' : NOT[r.kind] || NOT.connect); });
     }
     pins.forEach(p => { if (p !== b) p.classList.remove('open'); });
@@ -396,14 +409,14 @@
       const gone = setTimeout(() => { const here = document.activeElement === undo; undo.remove(); if (here) hold(said); let_go(); }, 10000);
       undo.addEventListener('click', () => {
         clearTimeout(gone); undo.disabled = true;
-        during(act(b.dataset.app, b.dataset.undo || 'undo', back)).then(r => { said.textContent = r && r.ok ? 'Put back.' : notSaved(r || {}); undo.remove(); hold(said); let_go(); });
+        during(act(b.dataset.app, b.dataset.undo || 'undo', back)).then(r => { said.textContent = r && r.ok ? 'Put back.' : notSaved(r || {}); undo.remove(); mend(said, r, b.dataset.app); hold(said); let_go(); });
       });
     };
     b.addEventListener('click', () => {
       if (b.disabled) return;
       b.disabled = true;
       during(act(b.dataset.app, b.dataset.act, fixed)).then(a => {
-        b.disabled = false;
+        b.disabled = false; mend(b, a, b.dataset.app);
         if (!a || !a.ok) { tip(b, notSaved(a || {})); return; }
         if (b.dataset.confirm !== 'read-back') { saved(a); return; }
         if (!a.token) { tip(b, notSaved({ said: "It couldn't be checked. Try again in a moment." })); return; }
@@ -419,7 +432,7 @@
           during(act(b.dataset.app, b.dataset.act, fixed, a.token)).then(r => {
             holding--;
             if (r && r.ok) { saved(r); return; }
-            box.replaceChildren(...was); b.focus(); tip(b, notSaved(r || {}));
+            box.replaceChildren(...was); b.focus(); tip(b, notSaved(r || {})); mend(b, r, b.dataset.app);
           });
         });
       });
@@ -446,7 +459,7 @@
       btn.disabled = true;
       during(send('POST', `/api/yours/${encodeURIComponent(app)}/${verb}`, {})).then(a => {
         btn.disabled = false;
-        said.textContent = a && a.ok ? (typeof a.said === 'string' ? a.said : '') : notSaved(a || {});
+        said.textContent = a && a.ok ? (typeof a.said === 'string' ? a.said : '') : notSaved(a || {}); mend(said, a, app);
       });
     };
     $('[data-yours-keep]', lbar).addEventListener('click', e => choose('keep', e.currentTarget));
@@ -623,5 +636,5 @@
     io.observe(a);
   })();
 
-  window.HydraKit = { $, $$, ss, clamp, nowMin, today, paintSky, onPaint: fn => { painted.push(fn); paintSky(); }, onPanel: fn => heard.push(fn), send, act, tip, notSaved, keep, live: LIVE };
+  window.HydraKit = { $, $$, ss, clamp, nowMin, today, paintSky, onPaint: fn => { painted.push(fn); paintSky(); }, onPanel: fn => heard.push(fn), send, act, tip, notSaved, mend, keep, live: LIVE };
 })();

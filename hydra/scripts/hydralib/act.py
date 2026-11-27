@@ -80,11 +80,12 @@ SENT_WRONG = "That can't be saved as it was sent."
 
 
 class Answer(Exception):
-    """The route's own refusal: a status, and the one line the page or chat shows."""
+    """The route's own refusal: a status, and the one line the page or chat shows; with `repair`, its answer says so
+    ("repair": true), so the page draws Repair beside the line, which hands Claude the request, and Claude offers it."""
 
-    def __init__(self, status, said):
+    def __init__(self, status, said, repair=False):
         super().__init__(said)
-        self.status, self.said = status, said
+        self.status, self.said, self.repair = status, said, repair
 
 
 # ---- the app, its release and its declaration --------------------------------------------------------------------
@@ -103,12 +104,12 @@ def where(config, app):
         raise Answer(404, "That page isn't installed.")
     plugin = entry.get("root")
     if not isinstance(plugin, str) or not os.path.isdir(plugin):
-        raise Answer(503, "This page's files aren't where Hydra-OS expects them, so nothing ran. Say 'repair Hydra-OS' to Claude.")
+        raise Answer(503, "This page's files aren't where Hydra-OS expects them, so nothing ran.", repair=True)
     record = os.path.join(config["root"], app)
     if not entry.get("record") or not files.same_path(entry["record"], record):  # however each spells an accent
-        raise Answer(503, "This page's folder isn't where Hydra-OS keeps it, so nothing ran. Say 'repair Hydra-OS' to Claude.")
+        raise Answer(503, "This page's folder isn't where Hydra-OS keeps it, so nothing ran.", repair=True)
     if not os.path.isdir(record):
-        raise Answer(503, "This page's folder isn't set up yet, so nothing ran. Say 'repair Hydra-OS' to Claude.")
+        raise Answer(503, "This page's folder isn't set up yet, so nothing ran.", repair=True)
     return os.path.realpath(plugin), record
 
 
@@ -121,9 +122,9 @@ def manifest(plugin, app):
         with open(path, encoding="utf-8") as f:
             doc = json.load(f)
     except (OSError, ValueError, RecursionError):
-        raise Answer(502, "This page's settings can't be read, so nothing ran. Say 'repair Hydra-OS' to Claude.")
+        raise Answer(502, "This page's settings can't be read, so nothing ran.", repair=True)
     if not isinstance(doc, dict) or doc.get("id") != app:
-        raise Answer(502, "This page's settings aren't its own, so nothing ran. Say 'repair Hydra-OS' to Claude.")
+        raise Answer(502, "This page's settings aren't its own, so nothing ran.", repair=True)
     return doc
 
 
@@ -370,7 +371,7 @@ def start(config, plugin, argv, env, deadline, saving=False):
     started, after 30 seconds or at the request's deadline. A refusal when it ran too long or printed too much."""
     script = _inside(os.path.join(plugin, argv[0]), os.path.join(plugin, "scripts"))
     if not script or not os.path.isfile(script):
-        raise Answer(502, "This app's files are incomplete, so nothing ran. Say 'repair Hydra-OS' to Claude.")
+        raise Answer(502, "This app's files are incomplete, so nothing ran.", repair=True)
     python = config.get("python") or ""
     if not os.path.isabs(python) or not os.access(python, os.X_OK):
         raise Answer(503, health.said("python-missing"))
@@ -493,7 +494,7 @@ class _Held:
                     time.sleep(0.05)
         except OSError:
             self._let_go()
-            raise Answer(503, "Hydra-OS's own folder can't be written, so nothing ran. Say 'repair Hydra-OS' to Claude.")
+            raise Answer(503, "Hydra-OS's own folder can't be written, so nothing ran.", repair=True)
         except BaseException:
             self._let_go()
             raise
@@ -534,8 +535,9 @@ def _run(config, app, action, fields, token, decide, by, today, deadline):
         return answer_of(start(config, plugin, argv, env, deadline, saving=True), False, True)
 
 
-def refusal(said):
-    return json.dumps({"ok": False, "said": said}, ensure_ascii=False).encode("utf-8")
+def refusal(said, repair=False):
+    return json.dumps(dict({"ok": False, "said": said}, **({"repair": True} if repair else {})),
+                      ensure_ascii=False).encode("utf-8")
 
 
 def handle(config, app, action, value, today=None, budget=BUDGET):
@@ -553,7 +555,7 @@ def handle(config, app, action, value, today=None, budget=BUDGET):
         fields, token = body_of(value)
         return 200, _run(config, app, action, fields, token, decide, "page", today or datetime.date.today(), deadline)[0]
     except Answer as a:
-        return a.status, refusal(a.said)
+        return a.status, refusal(a.said, a.repair)
 
 
 def chat(config, app, action, fields, yes=False, token=None, today=None, budget=BUDGET):
@@ -574,4 +576,4 @@ def chat(config, app, action, fields, yes=False, token=None, today=None, budget=
             raise Answer(400, "A token goes with --yes, as the check printed it.")
         return 200, _run(config, app, action, fields, token, decide, "chat", today or datetime.date.today(), deadline)[1]
     except Answer as a:
-        return a.status, {"ok": False, "said": a.said}
+        return a.status, dict({"ok": False, "said": a.said}, **({"repair": True} if a.repair else {}))

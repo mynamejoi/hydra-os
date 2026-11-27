@@ -21,7 +21,7 @@ and exits 0 when it did what it said, 2 when it refused (with why), and 1 when H
   hydra first skip name|goal|connect
   hydra widget add|remove <page> <offer>
   hydra add --key <key> | hydra add <pack file> --key <key>
-  hydra update [hydra | <page>]
+  hydra update [hydra | <page> | --check]
   hydra remove <page>
   hydra shop
   hydra setup <page>
@@ -60,6 +60,14 @@ RUN_WAIT = 5.0  # seconds `hydra run` waits to say how the run started
 
 class Refused(Exception):
     """A plain-words reason nothing changed."""
+
+
+REPAIR_OFFER = "Offer to repair Hydra-OS."  # said to Claude after a line a page would draw Repair beside
+
+
+def from_shop(e):
+    """The shop's refusal as this command's, with the offer for Claude when the shop's line is one to repair."""
+    return Refused(str(e) + (" " + REPAIR_OFFER if getattr(e, "repair", False) else ""))
 
 
 def now_local():
@@ -378,25 +386,31 @@ def add_cmd(config, args):
     try:
         return [shop.add(config, opts["key"], pos[0] if pos else None)]
     except shop.Refused as e:
-        raise Refused(str(e))
+        raise from_shop(e)
 
 
 def update_cmd(config, args):
     """hydra update: Hydra-OS itself first, then each page added from the shop once Hydra-OS went through; hydra
-    update hydra, Hydra-OS alone; hydra update <page>, that page alone."""
+    update hydra, Hydra-OS alone; hydra update <page>, that page alone; hydra update --check, what it would bring,
+    changing nothing. Hydra-OS gone through closes an Update tap from Home."""
     if len(args) > 1:
-        raise Refused("Say it as: hydra update, or hydra update <page>")
+        raise Refused("Say it as: hydra update, hydra update --check, or hydra update <page>")
     page = args[0] if args else None
     out = []
+    if page == "--check":
+        from hydralib import update
+        return update.check(config)
     if page in (None, registry.MAIN):
         from hydralib import update
         out = update.core(config)
+        if update.went_through(out):
+            panel.done_for(config["root"], "update", "", now_local())  # what Home's Update tap asked for
         if page == registry.MAIN or not update.went_through(out):
             return out
     try:
         return out + shop.update(config, page)
     except shop.Refused as e:
-        raise Refused(str(e))
+        raise from_shop(e)
 
 
 def remove_cmd(config, args):
@@ -411,7 +425,7 @@ def remove_cmd(config, args):
     try:
         return [shop.remove(config, args[0])]
     except shop.Refused as e:
-        raise Refused(str(e))
+        raise from_shop(e)
 
 
 def shop_cmd(config, args):

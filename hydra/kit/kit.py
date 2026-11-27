@@ -1554,15 +1554,17 @@ def shop_open(apps, root=None):
     return any(shop_state(p, apps, have) != "in-rail" for p in catalog(apps, root, every=True))
 
 
-def shop_body(pages, readings, installed=(), have=None, foot=""):
+def shop_body(pages, readings, installed=(), have=None, foot="", pending=()):
     """The Shop page. Its header, then a card per page on sale (on_sale): what it does (in your
     own goal's words when one fits: a goal its page measures, or one in a unit it counts), what it reads and what it
     needs, and where it stands beside its name ("In your rail", "Finance 1.2 is ready", "Update Hydra-OS first."). The
     pages to add come first, in the catalog's order, then any with an update ready, then those already in the rail, which
     the stylesheet draws as one slim row.
     "Get <Page>" shows only while it's on sale with a checkout, and opens the checkout in your own browser; Update
-    shows while a newer version is ready; "Ask Claude about it" files an `about` request. Then the
-    foot: the catalog's line and "Have a key? Paste it here." Home's own script (home/shop.js) keeps each card's state
+    shows while a newer version is ready; "Ask Claude about it" files an `about` request. A page in the rail that
+    hasn't run yet (`pending`, its ids) has "Set up <Page>", which hands Claude a `setup` request. Then the
+    foot: the catalog's line and "Have a key? Paste it here.", with a place under its answer for the Set up button of a
+    page a key just added. Home's own script (home/shop.js) keeps each card's state
     from Home's server. `have` is bought(root). Returns (header, main)."""
     have = have or {}
     pages = [p for p in pages if on_sale(p)]  # a card with empty buying fields never shows
@@ -1581,20 +1583,23 @@ def shop_body(pages, readings, installed=(), have=None, foot=""):
         line = SHOP_STATE.get(state) or ("%s %s is ready" % (p["title"], shown_version(p.get("version"))) if state == "update" else "")
         price = shop_price(p) if state not in ("in-rail", "update") else ""  # the catalog's; none once it's in the rail
         cls, style = tint(p["id"], p.get("accent"))
+        setup = ('<p class="act0 su"><button type="button" class="cta" data-connect data-kind="setup" data-app="%s">Set up %s</button></p>'
+                 % (esc(p["id"]), esc(p["title"])) if state == "in-rail" and p["id"] in pending else "")
         cards += ('<article%s><header class="ch"><h2>%s%s</h2><span class="st" data-line>%s</span></header>%s<div class="sw"><p class="say">%s</p>'
                   '<p class="via">%s</p><p class="via">%s</p>%s<p class="act0"><button type="button" class="cta" data-get%s>Get %s</button>'
                   '<button type="button" class="cta" data-update%s>Update</button>'
-                  '<button type="button" class="%s" data-connect data-kind="about" data-app="%s">%s</button></p>'
+                  '<button type="button" class="%s" data-connect data-kind="about" data-app="%s">%s</button></p>%s'
                   '<p class="said" data-said role="status" aria-live="polite"></p></div></article>') % (
             _attrs(" ".join(c for c in ("t", "sc", cls) if c), style, id="s-" + p["id"], data_page=p["id"], data_title=p["title"], data_state=state),
             icon(p.get("icon") or "apps"), esc(p["title"]), esc(line), shop_picture(p["id"], p["title"]), esc(does), esc(p["reads"]), esc(p["needs"]),
             '<p class="price">%s</p>' % esc(price) if price else "",
             "" if sale else " hidden", esc(p["title"]), "" if state == "update" else " hidden",
-            "alt" if sale or state == "update" else "cta", esc(p["id"]), esc(ASK_ABOUT))
+            "alt" if sale or state == "update" else "cta", esc(p["id"]), esc(ASK_ABOUT), setup)
     if not cards:
         return head, ""
     foot = foot.strip() if isinstance(foot, str) else ""
-    key = '<section class="t sf">%s%s%s<p class="said" id="shop-said" role="status" aria-live="polite"></p></section>' % (
+    key = ('<section class="t sf">%s%s%s<p class="said" id="shop-said" role="status" aria-live="polite"></p>'
+           '<p class="act0 su" id="shop-next" hidden></p></section>') % (
         '<p class="via">%s</p>' % esc(foot) if foot else "", "".join('<p class="via">%s</p>' % esc(t) for t in SHOP_AI),
         field("shop-key", KEY_LABEL, KEY_HINT, maxlength=160, button="Add"))
     return head, '<section class="shop" data-block="shop" aria-label="Pages you can add">%s</section>\n%s' % (cards, key)
@@ -2389,6 +2394,8 @@ class Page(object):
                 row.append((block, out))
         flush()
         rest = [out.replace(AGAIN_SLOT, "" if self._dropped else self._again) for out in rest]
+        if self._ready_to_set_up():
+            rest.insert(0, self._ready_to_set_up())
         body = "%s\n<main class=\"pg\">\n%s\n</main>\n%s" % (head, "\n".join(rest), footer(self.now))
         summary = {
             "contract": "summary/v1", "app": self.app, "built_at": self.now.isoformat(timespec="seconds"), "as_of": self.as_of,
@@ -2415,6 +2422,15 @@ class Page(object):
 
     def summary(self):
         return self._draw()[1]
+
+    def _ready_to_set_up(self):
+        """A page from the Shop that hasn't run yet (no say.json): one quiet line at the top of its page, "Finance is
+        ready to set up." with Set up Finance, which hands Claude a setup request. "" once its first run has written
+        say.json, for a page that isn't in the Shop, and for a page built with no root."""
+        if not self.root or not self.new or self.app not in {p.get("id") for p in shop_doc(self.root)["pages"] if isinstance(p, dict)}:
+            return ""
+        return ('<p class="t upd" data-setup><span>%s is ready to set up.</span><button type="button" class="cta" data-connect '
+                'data-kind="setup" data-app="%s">Set up %s</button></p>') % (esc(self.title), esc(self.app), esc(self.title))
 
     def ask(self):
         """The page's connect ask: column.json's {"id": "<app>-connect", "text"} while no source is chosen for

@@ -84,17 +84,19 @@ CHAT_DONE = "Hydra-OS is set up."
 CHAT_NEXT = ("Next, tell them that last, you'll move this chat into their Hydra-OS folder, so their pages and you stay "
              "together. Then move this chat into %s with the Claude app's own folder change, which asks them first, "
              "open Home in the Browser pane from %s, and tell them Home is open beside the chat.")
-CHAT_FAILED = ("Tell them that this step didn't finish, that nothing was changed, and that saying 'try again' picks up "
-               "from here. When they say try again, run this same hydra-setup again.")
-CHAT_SAY_IT = "Tell them that, in your own words."
-CHAT_UNFINISHED = ' After that, tell them about each line above that starts "Something didn\'t finish setting up".'
+CHAT_FAILED = ("Tell them that this step didn't finish and that nothing was changed, then offer to try again from "
+               "here. On their yes, run this same hydra-setup again.")
+CHAT_SAY_IT = ("Tell them that, in your own words. Once they've renamed it, offer to try again, and on their yes, run "
+               "this same hydra-setup again.")
+CHAT_UNFINISHED = (' After that, tell them about each line above that starts "Something didn\'t finish setting up", and '
+                   'offer to finish it: on their yes, run this same hydra-setup again.')
 CHAT_BROKE = "Hydra-OS's setup stopped on something it didn't expect."
 # the folder's own rules: Hydra-OS's command, and the Write tool to the morning review's answers alone, which in the
 # scheduled task's don't-ask mode is all it may write (Edit rules cover Write; "/" is the folder itself)
 ALLOW = ("Bash(hydra:*)", "Edit(/hydra/think/answers/**)")
 PUBLIC_LIST = "hydra-os-get"  # the public plugin list a buyer adds (shell/mac-app/make_list.py), left once setup is done
 LOCAL_SETTINGS = "settings.local.json"  # Claude Code's own file for a plugin installed at local scope
-NOT_OURS = "There's already a folder named Hydra-OS in your home folder. Rename it, then say 'try again'."
+NOT_OURS = "There's already a folder named Hydra-OS in your home folder, so nothing was changed. It needs another name first."
 
 
 class Stop(Exception):
@@ -217,7 +219,7 @@ class Setup:
             ok, said = self.checks.get(name, (True, ""))
             if not ok:
                 unfinished = True
-                print("Something didn't finish setting up: %s. Say 'repair Hydra-OS'." % mid(said))
+                print("Something didn't finish setting up: %s." % mid(said))
         print(CHAT_DONE, flush=True)
         print(CHAT_NEXT % (tilde(self.root), tilde(os.path.join(self.root, ".claude", "launch.json"))) +
               (CHAT_UNFINISHED if unfinished else ""), flush=True)
@@ -282,8 +284,7 @@ class Setup:
             return None
         raw = files.read_json(path)
         if not isinstance(raw, dict) or raw.get("contract") != cfg.CONTRACT:
-            raise Stop("Hydra-OS's settings in %s can't be read, so nothing was changed. Say 'repair Hydra-OS' to "
-                       "Claude." % tilde(self.root))
+            raise Stop("Hydra-OS's settings in %s can't be read, so nothing was changed." % tilde(self.root))
         self.updating = builds.updates(self.root, PLUGIN)
         return raw
 
@@ -308,7 +309,7 @@ class Setup:
             reg = registry.build(self.config, env=self.env)  # the main app's own entry, from Claude's own list
             main = registry.app(self.root, registry.MAIN)
         if not main:
-            raise Stop("Hydra-OS's own pages aren't installed in %s. Say 'repair Hydra-OS' to Claude." % tilde(self.root))
+            raise Stop("Hydra-OS's own pages aren't installed in %s." % tilde(self.root))
         self.main_root = main["root"]
         self.titles = [a.get("title") or a["id"] for a in reg.get("apps", [])]
         self.checks["plugins"] = (True, "%s %s installed." % (_and(self.titles), "is" if len(self.titles) == 1 else "are"))
@@ -382,17 +383,17 @@ class Setup:
         code, _ = cl.run(self.claude, ["plugin", "marketplace", "add", store, "--scope", "local"], env=self.env,
                          timeout=120, cwd=self.root)
         if code != 0:
-            raise Stop("Claude couldn't add Hydra-OS's store. Say 'repair Hydra-OS' to Claude.")
+            raise Stop("Claude couldn't add Hydra-OS's store.")
         for e in entries:
             code, _ = cl.run(self.claude, ["plugin", "install", "%s@%s" % (e["name"], cfg.STORE), "--scope", "local"],
                              env=self.env, timeout=300, cwd=self.root)
             if code != 0:
-                raise Stop("Claude couldn't install %s from Hydra-OS's store. Say 'repair Hydra-OS' to Claude." % e["name"])
+                raise Stop("Claude couldn't install %s from Hydra-OS's store." % e["name"])
         reg = registry.build(self.config, env=self.env)
         self.titles = [a.get("title") or a["id"] for a in reg.get("apps", [])]
         main = registry.app(self.root, registry.MAIN)
         if not main:
-            raise Stop("Hydra-OS's own pages didn't install. Say 'repair Hydra-OS' to Claude.")
+            raise Stop("Hydra-OS's own pages didn't install.")
         self.main_root = main["root"]
         for a in reg.get("apps", []):
             if a.get("kind") != "main":
@@ -466,7 +467,7 @@ class Setup:
             if self.get("/api/panel")[0] == 200:
                 return
             time.sleep(0.2)
-        raise Stop("Home's server didn't start. Say 'repair Hydra-OS' to Claude.")
+        raise Stop("Home's server didn't start.")
 
     def jobs_step(self):
         gone = jobs.retire_others(self.config, self.home)  # an older build's job this one doesn't use

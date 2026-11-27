@@ -16,10 +16,11 @@ FRONT_KEEP = datetime.timedelta(seconds=5)  # front.json is written again at mos
 REQUEST_SHOWN = datetime.timedelta(hours=24)
 PREVIEW_KEPT = datetime.timedelta(minutes=30)
 SKEW = datetime.timedelta(seconds=5)  # a reader's clock a moment behind the writer's
-KINDS = ("connect", "add-app", "repair", "about", "review", "helpers-off", "helpers-on")  # about: "Ask Claude about
-# it" on a Shop card; review: Help's "Turn on" for the morning review; helpers-off and helpers-on: Help's button for the
-# background helpers
-NO_APP = ("review", "helpers-off", "helpers-on")  # the kinds that name no app
+KINDS = ("connect", "add-app", "repair", "about", "review", "helpers-off", "helpers-on", "setup", "update", "remove")
+# about: "Ask Claude about it" on a Shop card; review: Help's "Turn on" for the morning review; helpers-off and
+# helpers-on: Help's button for the background helpers; setup: Set up on a page just added; update: Update on Home, for
+# Hydra-OS itself; remove: "Remove Hydra-OS…" on Help
+NO_APP = ("review", "helpers-off", "helpers-on", "update", "remove")  # the kinds that name no app
 MAY_NAME_NONE = ("add-app", "repair")  # Add on Home before it names a page; Repair on Help, for Hydra-OS itself
 APPEARANCE = ("sun", "light", "dark", "system")
 LOG_KINDS = ("asked", "kept", "undone")
@@ -200,6 +201,8 @@ def request(root, kind, app, now, service=""):
             raise Refused("That page isn't in the Shop.")
     elif kind not in ("add-app",) + NO_APP and app and not entry:
         raise Refused("That app isn't installed.")
+    elif kind == "setup" and entry.get("kind") == "main":
+        raise Refused("That isn't a request Claude takes.")  # Hydra-OS itself is set up by its own setup
     home = (entry or {}).get("home") or {}
     service = " ".join(str(service or "").split())
     if service:

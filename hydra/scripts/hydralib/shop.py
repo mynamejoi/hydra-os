@@ -60,7 +60,12 @@ PRICE_MOST = 40
 
 
 class Refused(Exception):
-    """One plain line on why nothing changed."""
+    """One plain line on why nothing changed; with `repair`, a page draws Repair beside it, which hands Claude the
+    request, and Claude offers it."""
+
+    def __init__(self, said="", repair=False):
+        super().__init__(said)
+        self.repair = repair
 
 
 def folder(root):
@@ -480,7 +485,7 @@ def _install(config, page, version, staged, key, env=None, prune=True):
     market_path = _marketplace(root)
     market_before = files.read_json(market_path, None)
     if not isinstance(market_before, dict) or not isinstance(market_before.get("plugins"), list):
-        raise Refused("Hydra-OS's store isn't set up here. Say 'repair Hydra-OS' to Claude.")
+        raise Refused("Hydra-OS's store isn't set up here, so nothing changed.", repair=True)
     pages_before = bought(root)
     keys_before = _keys(root)
     had = pages_before.get(page)
@@ -771,7 +776,7 @@ def add(config, key, pack_file=None, env=None):
         _install(config, page, version, inner, key, env)
     finally:
         shutil.rmtree(work, ignore_errors=True)
-    return "%s is in your rail. Say 'set up %s' in the chat beside this page." % (want["title"], want["title"])
+    return "%s is in your rail." % want["title"]  # its Set up, on its tile and its page, hands Claude the rest
 
 
 def _keys_keep(root, page, key):
@@ -836,7 +841,8 @@ def remove(config, page, env=None):
 def state(root):
     """Each catalog page and where it stands, for Home's Shop page (GET /api/shop) and `hydra shop`:
     {"pages": [{"id", "title", "version", "have", "state", "checkout", "price"}], "working": <the page being added or updated,
-    or "">, "said": <the last add's or update's line>}. A state is one of: "available", "not-ready" (no pack yet),
+    or "">, "said": <the last add's or update's line>, and "repair": true when Repair goes beside that line}. A state is
+    one of: "available", "not-ready" (no pack yet),
     "needs-hydra" (Update Hydra-OS first), "in-rail", "update" (a newer version is ready), "adding"."""
     have = bought(root)
     installed = {a["id"]: a for a in registry.read(root).get("apps", []) if a.get("kind") != "main" and a.get("id")}
@@ -862,7 +868,10 @@ def state(root):
         out.append({"id": p["id"], "title": p["title"], "version": p.get("version", ""), "have": h, "state": st,
                     "checkout": p.get("checkout", ""), "price": p.get("price", "")})
     said = now_doc.get("said") if isinstance(now_doc, dict) and isinstance(now_doc.get("said"), str) else ""
-    return {"pages": out, "working": working, "said": said}
+    doc = {"pages": out, "working": working, "said": said}
+    if said and now_doc.get("repair") is True:  # the Shop draws Repair beside that line
+        doc["repair"] = True
+    return doc
 
 
 def checkout(root, page, env=None):
@@ -885,6 +894,10 @@ def checkout(root, page, env=None):
     return "The checkout opens in your browser."
 
 
-def mark(root, working="", said=""):
-    """Home's server's note of an add or update under way, and of how the last one went."""
-    files.write_json(_p(root, "state.json"), {"working": working, "said": said, "at": _iso(_now())})
+def mark(root, working="", said="", repair=False):
+    """Home's server's note of an add or update under way, and of how the last one went: with `repair`, its line is
+    one the Shop draws Repair beside."""
+    doc = {"working": working, "said": said, "at": _iso(_now())}
+    if repair:
+        doc["repair"] = True
+    files.write_json(_p(root, "state.json"), doc)

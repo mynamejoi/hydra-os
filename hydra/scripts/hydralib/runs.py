@@ -216,15 +216,17 @@ def newest_by(record, trigger):
     return best[1] if best else None
 
 
-def tick_line(state, why, now, how="launchd", caught_up=False, trigger="schedule"):
+def tick_line(state, why, now, how="launchd", caught_up=False, trigger="schedule", repair=False):
     """The tick's own line for a run that didn't start, or that it stopped: as a launcher's stop line is, with no
-    server fields."""
+    server fields; with `repair`, "repair": true, as a page draws Repair beside its why."""
     stamp = now.replace(microsecond=0).isoformat()
     line = {"started_at": stamp, "finished_at": stamp, "trigger": trigger, "how": how, "unattended": trigger == "schedule",
             "ok": False, "state": state, "waiting_permission": False, "denied": 0, "sources": {}, "why": why,
             "tokens": None, "tokens_why": "The run didn't start." if state != "failed" else "It was stopped."}
     if caught_up:
         line["caught_up"] = True
+    if repair:
+        line["repair"] = True
     return line
 
 

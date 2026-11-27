@@ -235,7 +235,7 @@ class Tick:
         run = runs.launcher(app)
         if run is None or not os.path.isdir(record):
             runs.write_once(record, runs.tick_line("missed", health.said("lock-changed", app=title), now, self.how,
-                                                   caught_up, trigger), now)
+                                                   caught_up, trigger, repair=True), now)
             return False
         log = os.path.join(record, "runs.jsonl")
         size = os.path.getsize(log) if os.path.exists(log) else 0
@@ -278,7 +278,10 @@ class Tick:
         said = plain(line.get("why")) if state in ("waiting", "missed", "failed") else ""
         if state == "ran" and caught and started:
             said = health.said("caught-up", time=health.clock(started))
-        return dict(base, state=state, at=started.strftime("%H:%M") if started else "", caught_up=caught, said=said)
+        out = dict(base, state=state, at=started.strftime("%H:%M") if started else "", caught_up=caught, said=said)
+        if said and line.get("repair") is True:  # a page draws Repair beside its line
+            out["repair"] = True
+        return out
 
     def write(self):
         now = self.clock()

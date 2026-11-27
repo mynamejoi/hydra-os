@@ -281,6 +281,7 @@ def read(root, now=None):
         "name": name.strip().split(" ")[0][:24], "out": lights_out(root, apps, today),
         "welcome": not settings["welcome"] and not name.strip(),  # the welcome sheet's due
         "helpers": helpers_of(root),
+        "sold": {p.get("id") for p in kit.shop_doc(root)["pages"] if isinstance(p, dict)},  # the Shop's pages, which a tile sets up
         "quote": day_quote(root, today, goals),
         "new": not any(t["home"] for t in tiles if not t["hidden"]),  # nothing has run yet: the day-zero hub. Goals has no tile, so its run doesn't end it
         "has_goals_app": "goals" in apps,
@@ -474,6 +475,9 @@ def tile(t, model):
         body = '<header class="ch"><h2>%s</h2></header><p class="say0">%s</p>%s' % (name, esc(READING if t["reading"] else kit.capital(about.get("line") or "")), kit.empty_marks())
         if t["reading"]:  # the file is in: nothing to do but wait for its read
             pass
+        elif t["id"] in model.get("sold", ()):  # a page from the Shop: Set up is its one way in, as on its own page
+            body += '<p class="act0">%s%s</p>' % (kit.connect(t["id"], "Set up %s" % t["title"], kind="setup"),
+                                                  '<span class="via">%s</span>' % esc(via) if via else "")
         elif needs and t["drop"]:  # its one way in is a file: the tap opens its page at the drop place, and files nothing
             body += '<p class="act0"><a class="cta" href="/%s/#drop" target="_top">%s</a><span class="via">%s</span></p>' % (
                 esc(t["id"]), esc(needs), esc("The %s page shows you how." % t["title"]))
@@ -611,13 +615,14 @@ HELP = (
      "Each page updates every morning by itself. Pages that read your accounts do it in the morning review, which runs in your "
      "Claude app once you've turned it on. The more pages you have, the more of your plan it uses. Others read a file you drop on them."),
     ("repair", "A page says it hasn't updated. What do I do?",
-     'Tell Claude "repair Hydra-OS" in the chat beside this page. It finds what\'s wrong and says what it changed.'),
+     "Choose Repair above, and Claude finds what's wrong and says what it changed."),
     ("shop", "How do I add a page from the Shop?",
      "Open the Shop at the foot of the rail. Choose Get, or paste the key you were given at the Shop's foot, and the page joins "
-     "your rail. Then say 'set up' and the page's name in the chat, such as 'set up People'."),
+     "your rail. Then choose Set up on its card, and Claude walks you through it."),
     ("update", "How do I update Hydra-OS?",
-     'When Home says a new version is ready, tell Claude "update Hydra-OS". Your goals, your pages\' records and your own changes stay.'),
-    ("remove", "How do I remove Hydra-OS?", 'Tell Claude "remove Hydra-OS". It asks before anything goes.'),
+     "When a newer Hydra-OS is ready, Home says so at the top. Choose Update there, and Claude says what changes and updates "
+     "after your yes. Your goals, your pages' records and your own changes stay."),
+    ("remove", "How do I remove Hydra-OS?", "Choose Remove Hydra-OS\u2026 at the foot of this page. Claude asks before anything goes."),
     ("records", "Where are my records?", "As files on your Mac, in the Hydra-OS folder in your home folder. There's no server of ours."),
     ("leaves", "What leaves my Mac?",
      "What Claude reads for each page, under your own account; the Shop's daily list, which sends nothing about you; and Research's "
@@ -637,7 +642,7 @@ CONTACT = re.compile(r"[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+")
 
 # A newer Hydra-OS, and what's new after an update. An update goes through Claude.
 CHANGELOG = os.environ.get("HYDRA_TEST_CHANGELOG") or os.path.join(os.path.dirname(HERE), "CHANGELOG.md")  # the main plugin's: "## <version>", then its "- " lines; a test names a made-up one
-READY = 'Hydra-OS %s is ready. Tell Claude "update Hydra-OS".'
+READY = "Hydra-OS %s is ready."  # then its Update button, which hands Claude the update
 
 
 def installed(apps):
@@ -683,11 +688,23 @@ def whats_new(root, apps):
     return (have, lines) if lines else None
 
 
+def just_installed(root, apps):
+    """The pages in the rail that haven't run yet, installed or added from the Shop: no home.json in their record, or
+    one that says "new". Their Shop card has Set up until their first run."""
+    out = set()
+    for app_id in set(a for a, e in apps.items() if e.get("kind") != "main") | set(kit.bought(root)):
+        home = kit.read_json(os.path.join(kit.record_of(root, app_id, apps), "home.json"))
+        if not isinstance(home, dict) or home.get("contract") != "home/v3" or home.get("state") == "new":
+            out.add(app_id)
+    return out
+
+
 def updates(model):
     """The quiet line that says a newer Hydra-OS is ready, at the top of Home's grid. What's new is a sheet (sheet())."""
     out = ""
     if model.get("ready"):
-        out += '<p class="t upd" data-block="update">%s</p>\n' % esc(READY % kit.shown_version(model["ready"]))
+        out += ('<p class="t upd" data-block="update"><span>%s</span><button type="button" class="cta" data-connect data-kind="update" '
+                'data-app="">Update</button></p>\n') % esc(READY % kit.shown_version(model["ready"]))
     return out
 
 
@@ -748,6 +765,7 @@ def help_page(model):
             '<p class="sub">%s</p></section>\n<main class="pg hp">\n'
             '<section class="t sec" data-block="help" aria-label="Help"><ul class="hrows">%s</ul></section>\n'
             '<section class="t sec" data-block="answers" aria-labelledby="h-questions"><h2 class="hq0" id="h-questions">Questions</h2>%s</section>\n'
+            '<p class="t rm"><button type="button" class="alt" data-connect data-kind="remove" data-app="">Remove Hydra-OS\u2026</button></p>\n'
             '<div class="t foot ai">%s</div>\n</main>\n%s') % (
         esc(HELP_LINE), "".join(rows), items, "".join("<p>%s</p>" % esc(t) for t in kit.SHOP_AI), kit.footer(model["now"]))
     return kit.document("help", "Help", body, accent=205, built_at=model["now"].isoformat(timespec="seconds"), run="by-hand",
@@ -875,7 +893,7 @@ def build(root, now=None):
     home = home_page(model)  # / shows Home itself, in the Claude app's Browser pane
     # the Shop, served at /shop/, from the catalog in force, with what was added from it
     head, cards = kit.shop_body(kit.catalog(model["apps"], root, every=True), model["goals"]["goals"], installed=model["apps"],
-                                have=kit.bought(root), foot=kit.shop_doc(root).get("foot"))
+                                have=kit.bought(root), foot=kit.shop_doc(root).get("foot"), pending=just_installed(root, model["apps"]))
     shop = kit.document("shop", "Shop", "%s\n<main class=\"pg\">\n%s\n</main>\n%s" % (head, cards, kit.footer(model["now"])), accent=205,
                         built_at=built, run="by-hand", as_of=built, appearance=model["settings"]["appearance"], place=model["place"],
                         scripts=("/home/shop.js",), rail=kit.rail(model["apps"], "shop", root))

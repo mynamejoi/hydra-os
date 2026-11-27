@@ -38,8 +38,11 @@ Run (Python 3.9 standard library only):  python3 server.py [--root DIR] [--port 
 """
 import argparse
 import ast
+import base64
 import datetime
 import email.utils
+import hashlib
+import html
 import http.server
 import ipaddress
 import json
@@ -79,9 +82,23 @@ TYPES = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
          ".mjs": "text/javascript; charset=utf-8", ".json": "application/json", ".svg": "image/svg+xml",
          ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif",
          ".ico": "image/x-icon", ".woff2": "font/woff2", ".woff": "font/woff", ".txt": "text/plain; charset=utf-8"}
-NOT_BUILT = ("<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'>"
-             "<title>Not built yet</title><body style='font:16px/1.5 system-ui;margin:2rem'>"
-             "<p>This page isn't built yet. Say 'repair Hydra-OS' to Claude.</p>").encode("utf-8")
+# A page that isn't built yet says so, with a Repair button that hands Claude the request: its one script, allowed by
+# its sha256 alone, files {"kind": "repair", "app": <its data-app>} as Home's pages do, and shows the answer's line
+REPAIR_JS = ("document.getElementById('r').onclick=function(){var b=this,s=document.getElementById('s');b.disabled=true;"
+             "fetch('/api/request',{method:'POST',headers:{'Content-Type':'application/json'},"
+             "body:JSON.stringify({kind:'repair',app:b.dataset.app})}).then(function(r){return r.json()})"
+             ".then(function(j){s.textContent=j.said||''},function(){s.textContent='Not sent.';b.disabled=false})}")
+NOT_BUILT_CSP = ("default-src 'none'; style-src 'unsafe-inline'; connect-src 'self'; script-src 'sha256-%s'"
+                 % base64.b64encode(hashlib.sha256(REPAIR_JS.encode("utf-8")).digest()).decode("ascii"))
+
+
+def not_built(app):
+    """The page for one that isn't built yet: what's wrong, and Repair for `app` ("" for Hydra-OS itself)."""
+    return ("<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'>"
+            "<title>Not built yet</title><body style='font:16px/1.5 system-ui;margin:2rem'>"
+            "<p>This page isn't built yet.</p><p><button type=button id=r data-app=\"%s\">Repair</button> "
+            "<span id=s role=status aria-live=polite></span></p><script>%s</script>"
+            % (html.escape(app), REPAIR_JS)).encode("utf-8")
 NOT_OURS = "Only Hydra-OS's own pages can save."
 SENT_WRONG = "That can't be saved as it was sent."
 
@@ -339,8 +356,10 @@ def make_handler(config, timeout=TIMEOUT, budget=act.BUDGET, clock=None):
             real = os.path.realpath(os.path.join(base, name))
             if not real.startswith(real_base + os.sep) or not os.path.isfile(real):
                 if build and name in ("index.html", "frame.html"):
-                    return self.reply(404, NOT_BUILT, "text/html; charset=utf-8",
-                                      extra=(("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'"),))
+                    entry = registry.app(root, build) if build != "home" else None
+                    page = build if entry and entry.get("kind") != "main" else ""  # Home's own pages: Hydra-OS itself
+                    return self.reply(404, not_built(page), "text/html; charset=utf-8",
+                                      extra=(("Content-Security-Policy", NOT_BUILT_CSP),))
                 return self.reply(404, b"not found\n")
             try:
                 st = os.stat(real)
@@ -553,7 +572,7 @@ def make_handler(config, timeout=TIMEOUT, budget=act.BUDGET, clock=None):
                 page, key = shop.parse_key(key)
                 title = shop._listed(root, page)["title"]
             except shop.Refused as e:
-                return self.answer({"ok": False, "said": str(e)})
+                return self.answer(dict({"ok": False, "said": str(e)}, **({"repair": True} if e.repair else {})))
             return self.shop_work(page, "Adding %s\u2026" % title, lambda: shop.add(config, key))
 
         def shop_checkout(self, value):
@@ -650,13 +669,14 @@ def make_handler(config, timeout=TIMEOUT, budget=act.BUDGET, clock=None):
                 shop.mark(root, page, said)
 
             def run():
+                repair = False
                 try:
                     line = work()
                 except shop.Refused as e:
-                    line = str(e)
+                    line, repair = str(e), e.repair
                 except Exception:
                     line = "Something stopped it part way, so nothing changed. Try again in a moment."
-                shop.mark(root, "", line)
+                shop.mark(root, "", line, repair)
 
             threading.Thread(target=run, daemon=True).start()
             return self.answer({"ok": True, "said": said})

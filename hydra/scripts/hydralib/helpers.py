@@ -9,8 +9,10 @@ each chat's start runs one tick in the background, so the day's reads catch up t
   on(config, load, home)        hydra helpers on: a server a chat started stopped, both jobs written and loaded
   off(config, home)             hydra helpers off: both jobs stopped and their plists removed; Home's server goes on
                                 for the chat that asked, until the last Hydra-OS chat ends
-  chat_start(config, session)   a Hydra-OS chat's start, with the helpers off: Home's server started when it doesn't
-                                answer, and one tick started in the background
+  heal(config)                  at a chat's start: with the helpers off, an older install's jobs taken away; with them
+                                on, their link pointed again at the Python that moved, and both started again
+  chat_start(config, session)   a Hydra-OS chat's start: heal, then, with the helpers off, Home's server started when
+                                it doesn't answer, and one tick started in the background
   chat_end(config, session)     a Hydra-OS chat's end, with the helpers off: with no chat left, Home's server stopped
   start_plain, stop_plain       Home's server as a process of its own, kept in <root>/hydra/server.pid
   ps(pid, field)                one process's command line or program, as ps prints it under a UTF-8 locale
@@ -26,13 +28,13 @@ import time
 import unicodedata
 
 from . import config as cfg
-from . import files, jobs, registry
+from . import applog, files, jobs, registry
 
 ON = ("Hydra-OS's helpers are on: Home's server starts each time you log in to this Mac, and the tick runs every 15 "
       "minutes, starting each page's daily read once it's due.")
 OFF = ("Hydra-OS's helpers are off: nothing of Hydra-OS runs while no Hydra-OS chat is open. Home's server starts with a "
        "Hydra-OS chat, and the day's reads catch up then.")
-DIDNT = "Hydra-OS's helpers didn't start. Say 'repair Hydra-OS' to Claude."
+DIDNT = "Hydra-OS's helpers didn't start. Offer to try again."
 SERVER_WAIT = 15.0
 CHAT_WAIT = 3.0  # how long a chat's start waits for Home's server, so the hook stays quick
 CHAT_MOST = datetime.timedelta(hours=12)  # a chat that ended without saying so stops counting after this
@@ -210,9 +212,37 @@ def _chats(root, now):
     return out
 
 
+def heal(config):
+    """The helpers' own mending at a chat's start, so what's left over mends with nobody doing anything. With them off,
+    a job of this build's own labels that an older install left loaded or written is booted out and its plist removed
+    (jobs.retire_own). With them on, when the Python their link should name has moved, as after an Xcode or macOS
+    change, the link is pointed at it again and both jobs start again. Returns what it mended, for the log."""
+    if chose_off(config):
+        gone = jobs.retire_own(config)
+        if gone.get(config["server"]["label"]) == "running":
+            _wait_gone(config, wait=CHAT_WAIT)
+        return sorted(gone)
+    if not is_on(config) or jobs.untouchable():
+        return []
+    link = jobs.program(config)
+    want = jobs.real_python(config["python"])
+    if os.path.islink(link) and os.readlink(link) == want and os.path.exists(link):
+        return []
+    labels = [config["server"]["label"]] + ([config["tick"]["label"]] if (config.get("tick") or {}).get("on") else [])
+    loaded = jobs.loader()(jobs.write(config, _main_root(config), jobs.agents_folder(), labels)) or []
+    return ["the link"] + sorted(loaded)
+
+
 def chat_start(config, session, now=None):
-    """A Hydra-OS chat's start. With the helpers on, the jobs do it all. With them off: this chat counted, Home's
-    server started when it doesn't answer, and one tick started in the background for the day's reads."""
+    """A Hydra-OS chat's start: first the helpers' own mending (heal). With the helpers on, the jobs do the rest. With
+    them off: this chat counted, Home's server started when it doesn't answer, and one tick started in the background
+    for the day's reads."""
+    try:
+        mended = heal(config)
+    except (OSError, subprocess.SubprocessError, ValueError):
+        mended = []
+    if mended:
+        applog.note("helpers", "mended at a chat's start: %s" % ", ".join(mended))
     if not chose_off(config):
         return
     root = config["root"]

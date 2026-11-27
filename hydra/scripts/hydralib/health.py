@@ -22,7 +22,7 @@ SAID = {
     "offline": "No connection at {time}. Trying again.",
     "caught-up": "Ran at {time}, after this Mac woke.",
     "seat-down": "Claude's panel isn't reaching this Mac. Reconnect it.",
-    "lock-changed": "{app}'s files changed outside an update. Say 'repair Hydra-OS' to Claude.",
+    "lock-changed": "{app}'s files changed outside an update.",  # a page draws Repair beside it ("repair")
     "unfinished": "{app}'s run didn't finish. It runs again tomorrow.",
 }
 
@@ -47,7 +47,7 @@ def read(root):
 
 def write(root, checked_at, sign_in, seat, runs):
     """Write health.json whole. sign_in: {"state", "plan", "said"}; seat: {"state", "said"}; runs: each
-    {"app", "due", "state", "at", "caught_up", "said"}."""
+    {"app", "due", "state", "at", "caught_up", "said"}, with "repair": true when a page draws Repair beside its said."""
     if sign_in.get("state") not in SIGN_IN or seat.get("state") not in SEAT:
         raise ValueError("a sign-in or seat state outside install.md's")
     for r in runs:
@@ -57,6 +57,7 @@ def write(root, checked_at, sign_in, seat, runs):
            "sign_in": {"state": sign_in["state"], "plan": sign_in.get("plan", ""), "said": sign_in.get("said", "")},
            "seat": {"state": seat["state"], "said": seat.get("said", "")},
            "runs": [{"app": r["app"], "due": r.get("due", ""), "state": r["state"], "at": r.get("at", ""),
-                     "caught_up": bool(r.get("caught_up")), "said": r.get("said", "")} for r in runs]}
+                     "caught_up": bool(r.get("caught_up")), "said": r.get("said", ""),
+                     **({"repair": True} if r.get("repair") is True else {})} for r in runs]}
     files.write_json(path(root), doc)
     return doc

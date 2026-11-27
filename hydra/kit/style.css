@@ -716,7 +716,7 @@ section.shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%
   .sc>.ch{grid-column:1/-1}.sc>.spic{margin:.75rem 0 0}.sc:has(>.spic)>.sw{margin-top:.75rem}.sc:has(>.spic)>.sw>.say:first-child{margin-top:0}
 }
 section.shop .sc[data-state=in-rail],section.shop .sc[data-state=update]{grid-column:1/-1;grid-template-columns:minmax(0,1fr)}section.shop .sc[data-state=in-rail]>.sw,section.shop .sc[data-state=update]>.sw{margin-top:0}
-section.shop .sc[data-state=in-rail]>.spic,section.shop .sc[data-state=in-rail]>.sw>:not(.said),section.shop .sc[data-state=update]>.spic,section.shop .sc[data-state=update]>.sw>:not(.act0,.said){display:none}
+section.shop .sc[data-state=in-rail]>.spic,section.shop .sc[data-state=in-rail]>.sw>:not(.said,.su),section.shop .sc[data-state=update]>.spic,section.shop .sc[data-state=update]>.sw>:not(.act0,.said){display:none}
 /* The paid pages' shared blocks. A list: each row its title and a quiet tag, then
    its line, when and note in words, its move, its link and one button, rows apart by a hairline. A block's own lead and
    its why. An item's own buttons in a row, with a read-back's Confirm and Cancel in their place. */
@@ -781,7 +781,13 @@ ol.lst>.lr::before{content:counter(lr);grid-column:1;grid-row:1;font:var(--hl);l
 .rept{max-height:20rem;overflow:auto;padding:.75rem;border:1px solid var(--line);border-radius:.75rem;background:var(--well);font:var(--ca);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
 .rept:focus-visible{outline:2px solid var(--ink);outline-offset:2px}.foot.ai{margin-top:var(--gap)}
 /* On Home: a newer Hydra-OS in one quiet line, and What's new once after an update, at the top of the grid. */
-.t.upd{margin-bottom:var(--gap);padding:.75rem 1.25rem;font:var(--bo);letter-spacing:var(--bo-k);text-wrap:pretty}.t.wn{margin-top:0;margin-bottom:var(--gap)}
+.t.upd{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem 1rem;margin-bottom:var(--gap);padding:.75rem 1.25rem;font:var(--bo);letter-spacing:var(--bo-k);text-wrap:pretty}
+/* A page in the rail that hasn't run yet: Set up, on its card only while it's in the rail, and under the foot's answer. */
+section.shop .sc:not([data-state=in-rail]) .su{display:none}.sf .su{margin-top:0}
+/* Help's foot: Remove Hydra-OS, a quiet row of its own. */
+.t.rm{margin-top:var(--gap);padding:.5rem 1.25rem}
+/* Repair, beside a line whose answer asks for it: on its own line under a line of text, in a row of buttons beside them. */
+.rpr{justify-self:start;align-self:start}p+.rpr,span+.rpr,div+.rpr{margin-top:.5rem}.t.wn{margin-top:0;margin-bottom:var(--gap)}
 .hl{margin:.25rem 0 0;padding-left:1.25rem;display:grid;gap:.25rem;list-style:disc}.hl li{text-wrap:pretty}.hl li::marker{color:var(--ink2)}.hl .hl{list-style:circle}.hp a[data-open]{text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
 /* Where this comes from, one list: a newer file's place sits under the list, with room above it. */
 .conn>.drop{margin-top:.75rem}

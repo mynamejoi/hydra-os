@@ -2,6 +2,12 @@
 
 Each version's notes, newest first. Home's What's new shows a version's first three lines once, after an update.
 
+## 1.0.2
+
+- **Buttons instead of phrases.** Set up, Update, Repair and Remove are buttons now, and Claude takes it from there.
+- **It mends itself.** Each chat clears what an older Hydra-OS left, and puts the helpers right after a Mac update.
+- **What's new first.** Before an update, Claude tells you what it brings, then asks you.
+
 ## 1.0.1
 
 - **Adding a page, explained.** Help now says how to add a page from the Shop, and how to set it up after.
