@@ -613,7 +613,7 @@ HELP = (
     ("repair", "A page says it hasn't updated. What do I do?",
      'Tell Claude "repair Hydra-OS" in the chat beside this page. It finds what\'s wrong and says what it changed.'),
     ("shop", "How do I add a page from the Shop?",
-     "Open the Shop at the foot of the rail and choose Get. Your receipt has a key: paste it at the Shop's foot, and the page joins "
+     "Open the Shop at the foot of the rail. Choose Get, or paste the key you were given at the Shop's foot, and the page joins "
      "your rail. Then say 'set up' and the page's name in the chat, such as 'set up People'."),
     ("update", "How do I update Hydra-OS?",
      'When Home says a new version is ready, tell Claude "update Hydra-OS". Your goals, your pages\' records and your own changes stay.'),
@@ -763,7 +763,8 @@ ANTHROPIC_PRIVACY = "https://www.anthropic.com/legal/privacy"
 PRIVACY_PAGES = (
     ("Wellbeing", "the Apple Health export you drop in, read on your Mac. It never gives a diagnosis, medical advice or a diet plan."),
     ("Goals", "what you tell Claude, and what your pages count."),
-    ("Finance", "Monarch through your own connector, read only, or a file from your bank. It never trades, moves money or says what to buy or sell."),
+    ("Finance", "Monarch and Robinhood through your own connectors, read only, or a file from your bank. It never trades, moves money or "
+                "says what to buy or sell."),
     ("People", "Gmail and Google Calendar through your own connectors, read only. It reads who and when, never a message's words or its "
                "subject. It never sends, drafts or changes anything."),
     ("Inbox", "Gmail and Google Calendar through your own connectors, read only. It reads who, when and the subject, never a message's "

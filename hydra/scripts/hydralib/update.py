@@ -235,7 +235,21 @@ class Update:
 
     def jobs_step(self, main_root):
         """Home's server and, when it's on, the tick, started again from main_root: as launch agents, or as a process
-        of its own when a chat started it, with the helpers off."""
+        of its own when a chat started it, with the helpers off. With the helpers chosen off, a job of either label an
+        older install left is booted out and its plist removed instead (jobs.retire_own), so nothing starts at login,
+        and Home's server goes on as a process of its own, from main_root, for the chat that asked."""
+        from . import helpers
+        if helpers.chose_off(self.config):
+            gone = jobs.retire_own(self.config)
+            if gone:
+                applog.note("update", "with the helpers off, an older install's jobs taken away: %s" % ", ".join(sorted(gone)))
+            if gone.get(self.config["server"]["label"]) == "running":
+                self.wait_gone()
+            if helpers.plain_running(self.config):
+                helpers.restart_plain(self.config, main_root)
+            else:
+                helpers.start_plain(self.config, main_root)
+            return
         labels = [self.config["server"]["label"]] + ([self.config["tick"]["label"]] if self.config["tick"].get("on") else [])
         folder = jobs.agents_folder(os.path.expanduser("~"))
         labels = [lbl for lbl in labels if os.path.exists(os.path.join(folder, lbl + ".plist"))]
@@ -244,7 +258,6 @@ class Update:
         self.wait_gone()
         if labels:
             self.load(jobs.write(self.config, main_root, folder, labels))
-        from . import helpers
         helpers.restart_plain(self.config, main_root)
 
     def get(self):

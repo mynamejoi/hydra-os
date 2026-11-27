@@ -24,7 +24,8 @@ that fails, with one plain line on what stopped it:
 7. <root>/.claude/launch.json, so the Claude app's Browser pane opens Home.
 8. The hydra-os-get list, which the plugin was installed from at local scope in <root>, left: so every later update
    comes only through hydra update, checked against Hydra-OS's key.
-9. The self-test, written to <root>/hydra/setup.json, each check that failed said with what to do.
+9. The self-test, written to <root>/hydra/setup.json, each check that failed said with what to do; then the signed
+   catalog of pages is read, so Home's Shop shows them at once.
 
 A fresh setup that stops takes back all it made, so nothing is left changed. Over a folder already set up, setup picks
 up where it was left, and keeps the person's goals, sources and pages as they are. It exits 0 once done, or 2 with its
@@ -185,6 +186,7 @@ class Setup:
                 self.command_step()
             else:
                 self.resume_step()
+            self.catalog_step()
             print(CHAT_STEPS[1], flush=True)
             self.server_step()
             self.jobs_step()
@@ -413,7 +415,27 @@ class Setup:
         os.chmod(bin_path, 0o700)
         files.write_json(os.path.join(self.root, ".claude", "settings.json"), {"permissions": {"allow": list(ALLOW)}})
 
+    def catalog_step(self):
+        """The Shop's pages at once: the signed catalog read before Home's server starts, so Home is never drawn
+        without it, rather than first at a later tick. A read that fails changes nothing else; it never raises."""
+        try:
+            applog.note("install", "the catalog: %s" % shop.read_catalog(self.config, env=self.env))
+        except Exception as e:
+            applog.note("install", "the catalog couldn't be read: %r" % (e,))
+
+    def no_login_jobs(self):
+        """With the helpers off, nothing of Hydra-OS starts at login: a job of this build's own labels, Home's server's
+        or the tick's, that an older install left loaded or written is booted out and its plist removed
+        (jobs.retire_own), before Home's server starts, so an older server gives up the port first."""
+        gone = jobs.retire_own(self.config, self.home)
+        if gone:
+            applog.note("install", "with the helpers off, an older install's jobs taken away: %s" % ", ".join(sorted(gone)))
+        if gone.get(self.config["server"]["label"]) == "running":
+            self.wait_gone()
+
     def server_step(self):
+        if not (self.jobs_on or self.jobs_were_on()):
+            self.no_login_jobs()
         if self.existing is not None and not self.updating and self.get("/api/panel")[0] == 200:
             self.checks["server"] = (True, "Home answers on this Mac.")
             return
@@ -447,6 +469,9 @@ class Setup:
         raise Stop("Home's server didn't start. Say 'repair Hydra-OS' to Claude.")
 
     def jobs_step(self):
+        gone = jobs.retire_others(self.config, self.home)  # an older build's job this one doesn't use
+        if gone:
+            applog.note("install", "an older build's jobs taken away: %s" % ", ".join(gone))
         if self.jobs_were_on():
             self.jobs_on = True
             ok = True

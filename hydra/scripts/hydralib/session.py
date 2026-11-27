@@ -14,7 +14,6 @@ Under any HYDRA_TEST_ switch, no parent is read and nothing is started, unless t
 (HYDRA_TEST_CHAT_CLAUDE, HYDRA_TEST_CHAT_START=1). Python 3.9 standard library only."""
 import os
 import shlex
-import subprocess
 
 from . import config as cfg
 from . import files, helpers, tools
@@ -51,11 +50,7 @@ def _claude_file(path):
 
 
 def _comm(pid):
-    try:
-        return subprocess.run(["/bin/ps", "-ww", "-o", "comm=", "-p", str(int(pid))], capture_output=True, text=True, timeout=5,
-                              env={"PATH": "/usr/bin:/bin"}).stdout.strip()
-    except (OSError, ValueError, subprocess.SubprocessError):
-        return ""
+    return helpers.ps(pid, "comm")
 
 
 def chat_claude(environ, ppid=None, look=_comm):

@@ -1,6 +1,6 @@
 # What Hydra-OS installs
 
-Everything Hydra-OS puts on your Mac, everything it runs, every address it reaches, and how to remove it. This is Hydra-OS 1.0.0.
+Everything Hydra-OS puts on your Mac, everything it runs, every address it reaches, and how to remove it. This is Hydra-OS 1.0.1.
 
 ## The folder
 
@@ -22,6 +22,7 @@ They run only if you said yes to them at setup.
 - **Home's server** starts each time you log in to this Mac, as the launch agent `os.hydra.home`, in `~/Library/LaunchAgents/os.hydra.home.plist`. It serves your pages on this Mac's own loopback address only, `127.0.0.1`, on port 8792 or the next free one, and takes writes only from its own pages.
 - **The tick** runs every 15 minutes, as the launch agent `os.hydra.tick`, in `~/Library/LaunchAgents/os.hydra.tick.plist`. It starts each page's daily read once it's due, in Python on this Mac, reading only files on your Mac. It never starts Claude Code or a model.
 - Both show as Hydra-OS in System Settings, General, Login Items.
+- Setup takes away any other `os.hydra.` launch agent an older Hydra-OS left, and stops one of its own still loaded before it starts it again. With a no to the helpers, it takes away its own two as well, so nothing starts at login.
 
 **To turn them off,** say "turn the helpers off" in a Hydra-OS chat: Claude runs `hydra helpers off`, which stops both and removes their launch agents. "Turn the helpers on" starts them at login again.
 
@@ -45,11 +46,13 @@ Goals and Wellbeing have no hooks. Of the pages you can add later, Research and 
 
 Hydra-OS's own code reaches only these:
 
-- **The catalog of pages and updates,** `https://raw.githubusercontent.com/mynamejoi/hydra-os/main/catalog.json`, or its mirror `https://mynamejoi.github.io/hydra-os/catalog.json` when the first doesn't answer: at most once in 20 hours, from the tick, and when you add or update a page. It's a plain request that sends nothing about you, and nothing in it is used until its signature checks out.
+- **The catalog of pages and updates,** `https://raw.githubusercontent.com/mynamejoi/hydra-os/main/catalog.json`, or its mirror `https://mynamejoi.github.io/hydra-os/catalog.json` when the first doesn't answer: during setup, so Home's Shop shows its pages at once, then at most once in 20 hours, from the tick, and when you add or update a page. It's a plain request that sends nothing about you, and nothing in it is used until its signature checks out.
 - **An update or a page you add,** from the same places, checked against the sha256 the signed catalog gives.
 - **A link on a page that leaves it** opens in your own browser, only when you click it. Home's Privacy page links to Anthropic's own privacy policy, `https://www.anthropic.com/legal/privacy`, in the same way.
 
 Claude Code itself fetches this repo with `git` from `github.com` when it adds the plugin list at install.
+
+**The hydra-<version>.zip file** is Hydra-OS itself, for a folder already set up: `hydra update` fetches it, checks it against the sha256 the signed catalog gives, keeps a backup, and puts everything back if a step fails. Setup never uses it; it installs from this repo's own `hydra/` folder.
 
 **The .pack files.** Each is a paid page, sealed. Hydra-OS opens one only when you add that page from Home's Shop, with the key on your receipt, and only once its sha256 matches the signed catalog. Until then, nothing reads it.
 
@@ -79,7 +82,7 @@ The download page prints it too, so you can check one against the other. Nothing
 - It never installs, updates or signs in to Claude Code, and never starts a Claude session on its own: Claude runs only in your chats and in the morning review you said yes to. Hydra-OS runs Claude Code's own commands, for its plugins and its list of connectors, only in a step you take in a chat or on Home: setting up, connecting a source, adding, updating or removing a page or Hydra-OS itself. If one of those was cut off part way, Home's server runs them once more when it next starts, to put things back. The tick never runs one.
 - It never runs a model unattended.
 - It never reads your keychain, a password or a token, and never asks you for one.
-- It never writes Claude Code's own settings or `~/.claude`: Claude Code's own plugin commands do the installing.
+- It never writes Claude Code's settings outside `~/Hydra-OS`, nor anything in `~/.claude`. Inside `~/Hydra-OS`, setup writes `.claude/settings.json` (the `hydra` command's rule and the morning review's answers folder) and `.claude/launch.json` (Home for the Browser pane); Claude Code's own plugin commands write `.claude/settings.local.json`, and do the installing.
 
 ## Remove it
 

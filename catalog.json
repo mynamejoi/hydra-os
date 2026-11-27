@@ -15,11 +15,11 @@
         "script": "scripts/goals.py",
         "what": "money you save or keep in cash, from your accounts or a file from your bank"
       },
-      "reads": "Monarch, or a file from your bank. Read only.",
+      "reads": "Monarch, Robinhood, or a file from your bank. Read only.",
       "needs": "Its morning review uses some of your Claude plan.",
-      "version": "0.22.1",
-      "pack": "finance-0.22.1.pack",
-      "sha256": "9c260e55bcbbf61cbac401764d225ef0d45c3e1c2bb599b8a87dd2f031ce1c17",
+      "version": "0.22.2",
+      "pack": "finance-0.22.2.pack",
+      "sha256": "54590f0bc61e8d2f3853271a274b1e6d86a3d101626731faf1307eaf687d3660",
       "checkout": "",
       "price": "",
       "min_hydra": "0.1.0"
@@ -41,9 +41,9 @@
       },
       "reads": "Gmail and Google Calendar: who and when, never the message. Or a file you drop. Read only.",
       "needs": "Its morning review uses some of your Claude plan.",
-      "version": "1.1.1",
-      "pack": "network-1.1.1.pack",
-      "sha256": "f14923daa9b40adc94d446df6acf78bbf04803e19b924e715b3f492c8dfd00a6",
+      "version": "1.1.2",
+      "pack": "network-1.1.2.pack",
+      "sha256": "4829dacf8b6958051e18e4788771e508f3c9cd6c0aa148b131b4bc925f6934ba",
       "checkout": "",
       "price": "",
       "min_hydra": "1.0.0"
@@ -58,9 +58,9 @@
       "fits": null,
       "reads": "The web through Claude's own search, in general words only. Public release notes. Notes you drop in. Read only.",
       "needs": "Its Monday review uses some of your Claude plan.",
-      "version": "1.0.3",
-      "pack": "learning-1.0.3.pack",
-      "sha256": "0c34d3bce95efbd6889b8138e12c68293ea9f3a81e88118d4f113c2fd321dc7a",
+      "version": "1.0.4",
+      "pack": "learning-1.0.4.pack",
+      "sha256": "dc3799448bfb0be7f335c13d2d206516d686c85c9da5bc0448e14ba2ef460000",
       "checkout": "",
       "price": "",
       "min_hydra": "1.0.0"
@@ -81,9 +81,9 @@
       },
       "reads": "Gmail and Google Calendar: who, when and the subject, never the message. Read only. It sends nothing.",
       "needs": "Its morning review uses some of your Claude plan.",
-      "version": "1.0.3",
-      "pack": "inbox-1.0.3.pack",
-      "sha256": "a1784502c8effd132cdacaad3e8f28aedd6e3ce8915c96d6d94cd64ded649c61",
+      "version": "1.0.4",
+      "pack": "inbox-1.0.4.pack",
+      "sha256": "f701470f21177192a7dd02f0392d35aa91c414e9e50fe0913d0c7d9b786960d8",
       "checkout": "",
       "price": "",
       "min_hydra": "1.0.0"
@@ -106,13 +106,25 @@
       },
       "reads": "A file you export from YouTube Studio. It never signs in to YouTube.",
       "needs": "Its morning review uses some of your Claude plan.",
-      "version": "1.2.0",
-      "pack": "content-1.2.0.pack",
-      "sha256": "6cf18fb313cba995dc81235bb76f2301770a72de8e765738229299ee71b6b805",
+      "version": "1.2.1",
+      "pack": "content-1.2.1.pack",
+      "sha256": "fe35cc95561ca1bc93726f1d4823d0330cfb7cb83263729bac4dd29b2919b1f1",
       "checkout": "",
       "price": "",
       "min_hydra": "1.0.0"
     }
   ],
-  "foot": "Paid once, updates included. Works with your own Claude plan."
+  "foot": "Paid once, updates included. Works with your own Claude plan.",
+  "core": {
+    "version": "1.0.1",
+    "zip": "hydra-1.0.1.zip",
+    "sha256": "782af6151deac8376e5d54153ba4fbb4c40ca0751b97fb96e7061ad91352b7dc",
+    "notes": [
+      "Adding a page, explained. Help now says how to add a page from the Shop, and how to set it up after.",
+      "The Shop at once. On a new Mac, Home's Shop shows its pages as soon as setup ends.",
+      "Setup in one step. Claude asks you once, then sets Hydra-OS up with a single command.",
+      "Tidier setup. Setup clears out what an older Hydra-OS left behind, by itself.",
+      "Repair from Help. Help's Repair button now reaches Claude, who finds what's wrong and fixes it after your yes."
+    ]
+  }
 }

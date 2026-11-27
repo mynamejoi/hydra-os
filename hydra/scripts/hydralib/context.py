@@ -334,7 +334,8 @@ def primer(root):
               "the morning review task's own: run it only when that task's prompt asks. When they want the review now, "
               "start the \"%s\" task now with the Claude app's own scheduled-task tool, so it runs in its own session. "
               "hydra helpers on or off sets whether its two helpers start at login: say what changes, and run it only "
-              "after their yes." % think.NAME)
+              "after their yes. Repair on Help is for Hydra-OS itself: hydra report says how each part stands. Fix "
+              "what's wrong after their yes, say what you changed, then hydra panel done <its request id>." % think.NAME)
     notes = ""
     try:
         with open(os.path.join(root, "yours", "claude.md"), encoding="utf-8") as f:
@@ -406,6 +407,8 @@ def _request_line(r, titles, root=None):
     if r.get("kind") == "about":  # "Ask Claude about it" on a Shop card
         return "- They tapped Ask Claude about it for %s on the Shop page. Its request id is %s." % (
             q(catalog.title(root, r.get("app")) or r.get("app", "")), r.get("id", ""))
+    if not r.get("app"):  # Help's Repair, for Hydra-OS itself
+        return '- They tapped Repair on Help: "Repair Hydra-OS." Its request id is %s.' % r.get("id", "")
     return "- They tapped Repair on %s. Its request id is %s." % (app, r.get("id", ""))
 
 

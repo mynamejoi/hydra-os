@@ -13,6 +13,7 @@ each chat's start runs one tick in the background, so the day's reads catch up t
                                 answer, and one tick started in the background
   chat_end(config, session)     a Hydra-OS chat's end, with the helpers off: with no chat left, Home's server stopped
   start_plain, stop_plain       Home's server as a process of its own, kept in <root>/hydra/server.pid
+  ps(pid, field)                one process's command line or program, as ps prints it under a UTF-8 locale
 
 Nothing here starts Claude Code. Python 3.9 standard library only."""
 import datetime
@@ -22,6 +23,7 @@ import signal
 import subprocess
 import sys
 import time
+import unicodedata
 
 from . import config as cfg
 from . import files, jobs, registry
@@ -72,14 +74,23 @@ def _main_root(config):
     return main.get("root") if os.path.isdir(main.get("root") or "") else here
 
 
+def ps(pid, field):
+    """One process's `field` as ps prints it, "command" (its command line) or "comm" (its program's path), in NFC; ""
+    when there's none. ps runs under a UTF-8 locale: with none, it prints a path's letters outside ASCII escaped, and
+    no path would match."""
+    try:
+        out = subprocess.run(["/bin/ps", "-ww", "-o", field + "=", "-p", str(int(pid))], capture_output=True,
+                             encoding="utf-8", errors="surrogateescape", timeout=5,
+                             env={"PATH": "/usr/bin:/bin", "LC_ALL": "en_US.UTF-8"}).stdout.strip()
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return ""
+    return unicodedata.normalize("NFC", out)
+
+
 def _ours(config, pid):
     """Whether a recorded pid is still this folder's own Home server, by its own command line."""
-    try:
-        line = subprocess.run(["/bin/ps", "-ww", "-o", "command=", "-p", str(int(pid))], capture_output=True, text=True,
-                              timeout=5, env={"PATH": "/usr/bin:/bin"}).stdout.strip()
-    except (OSError, ValueError, subprocess.SubprocessError):
-        return False
-    return (os.sep + "server.py") in line and line.endswith("--root " + config["root"])
+    line = ps(pid, "command")
+    return (os.sep + "server.py") in line and line.endswith(unicodedata.normalize("NFC", "--root " + config["root"]))
 
 
 def start_plain(config, main_root=None, wait=SERVER_WAIT):
@@ -142,6 +153,7 @@ def on(config, load=jobs.load, home=None):
     if is_on(config) and config.get("helpers") == "on":
         return [ON]
     stop_plain(config)
+    jobs.retire_others(config, home)  # an older build's job this one doesn't use
     config = _write_on(config, True)  # first, so the tick finds itself on as it starts
     folder = jobs.agents_folder(home)
     labels = [config["server"]["label"], config["tick"]["label"]]

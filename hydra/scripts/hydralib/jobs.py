@@ -134,14 +134,61 @@ def _uid():
 
 
 def load(paths, runner=subprocess.run):
-    """Load each written job for the person, only from setup with --jobs. Returns the labels that loaded."""
+    """Load each written job for the person, only from setup with --jobs. A job of the same label still loaded, as an
+    older or broken install can leave one, is booted out first, so its bootstrap never fails on it. Returns the labels
+    that loaded."""
     done = []
     for path in paths:
+        label = os.path.basename(path)[:-len(".plist")]
+        if state(label, runner) != "absent":
+            unload(label, runner)
         r = runner(["/bin/launchctl", "bootstrap", "gui/" + _uid(), path], capture_output=True, text=True, timeout=30)
         applog.note("launchctl", "bootstrap %s: exit %d" % (os.path.basename(path), r.returncode))
         if r.returncode == 0:
             done.append(os.path.basename(path)[:-len(".plist")])
     return done
+
+
+def retire_others(config, home=None):
+    """Every os.hydra.* job in the person's LaunchAgents that this build doesn't use, as an older build's os.hydra.seat,
+    booted out and its plist removed. Returns the labels it took away."""
+    folder = agents_folder(home)
+    ours = {config["server"]["label"], (config.get("tick") or {}).get("label")}
+    gone = []
+    try:
+        names = sorted(os.listdir(folder))
+    except OSError:
+        return gone
+    for name in names:
+        label = name[:-len(".plist")] if name.endswith(".plist") else ""
+        if label.startswith("os.hydra.") and label not in ours:
+            unload(label)
+            try:
+                os.unlink(os.path.join(folder, name))
+            except OSError:
+                continue
+            gone.append(label)
+    return gone
+
+
+def retire_own(config, home=None):
+    """With the helpers off, nothing starts at login: this build's own two jobs, Home's server's and the tick's, booted
+    out where an older install left them loaded, and their plists removed. Returns {label: its state before} for each
+    one it took away."""
+    folder = agents_folder(home)
+    gone = {}
+    for label in (config["server"]["label"], (config.get("tick") or {}).get("label")):
+        if not label:
+            continue
+        plist = os.path.join(folder, label + ".plist")
+        was = state(label)
+        if was == "absent" and not os.path.lexists(plist):
+            continue
+        unload(label)
+        if os.path.lexists(plist):
+            os.unlink(plist)
+        gone[label] = was
+    return gone
 
 
 def test_load(record, home):
@@ -156,6 +203,7 @@ def test_load(record, home):
         for path in paths:
             with open(path, "rb") as f:
                 doc = plistlib.load(f)
+            _stop_test_job(record, doc["Label"])  # one still loaded is booted out first, as load() does
             with open(record, "a", encoding="utf-8") as f:
                 f.write(path + "\n")
             done.append(doc["Label"])

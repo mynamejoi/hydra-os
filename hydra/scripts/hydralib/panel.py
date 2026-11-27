@@ -20,6 +20,7 @@ KINDS = ("connect", "add-app", "repair", "about", "review", "helpers-off", "help
 # it" on a Shop card; review: Help's "Turn on" for the morning review; helpers-off and helpers-on: Help's button for the
 # background helpers
 NO_APP = ("review", "helpers-off", "helpers-on")  # the kinds that name no app
+MAY_NAME_NONE = ("add-app", "repair")  # Add on Home before it names a page; Repair on Help, for Hydra-OS itself
 APPEARANCE = ("sun", "light", "dark", "system")
 LOG_KINDS = ("asked", "kept", "undone")
 ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}")
@@ -185,18 +186,19 @@ def via_names(via):
 
 def request(root, kind, app, now, service=""):
     """POST /api/request: an open request, or the open one for the same kind, app and service with its `at`
-    refreshed. `connect` and `repair` are for an installed app, `add-app` for one from the store. `needs` comes from
-    the app's `home.needs` in the registry, and a `service` must be one of its `home.via` names, in any case: a row
-    drawn "A file" from "a file" is taken, and the request keeps the name as `home.via` spells it."""
-    if kind not in KINDS or not (_id(app) or (kind in ("add-app",) + NO_APP and app == "")) or \
+    refreshed. `connect` and `repair` are for an installed app, `add-app` for one from the store; `repair` naming
+    none, Help's Repair, is for Hydra-OS itself. `needs` comes from the app's `home.needs` in the registry, and a
+    `service` must be one of its `home.via` names, in any case: a row drawn "A file" from "a file" is taken, and the
+    request keeps the name as `home.via` spells it."""
+    if kind not in KINDS or not (_id(app) or (kind in MAY_NAME_NONE + NO_APP and app == "")) or \
             (kind in NO_APP and app != ""):
-        raise Refused("That isn't a request Claude takes.")  # Add on Home may name no app yet
+        raise Refused("That isn't a request Claude takes.")
     entry = registry.app(root, app)
     if kind == "about":
         from . import catalog
         if not catalog.title(root, app):
             raise Refused("That page isn't in the Shop.")
-    elif kind not in ("add-app",) + NO_APP and not entry:
+    elif kind not in ("add-app",) + NO_APP and app and not entry:
         raise Refused("That app isn't installed.")
     home = (entry or {}).get("home") or {}
     service = " ".join(str(service or "").split())

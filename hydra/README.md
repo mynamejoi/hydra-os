@@ -2,7 +2,7 @@
 
 The main plugin of Hydra-OS. It sets up your Hydra-OS folder, `~/Hydra-OS`, serves Home and each of your pages on this Mac only, starts each page's daily read, and tells Claude where you are on your pages. Python 3.9 standard library only, on the Mac's own `/usr/bin/python3`.
 
-It never starts a model on its own, never signs you in or reads a sign-in, never installs or updates Claude Code, and never writes Claude Code's own settings or `~/.claude`. Claude Code's own plugin commands, run in your chat after your yes, do the installing.
+It never starts a model on its own, never signs you in or reads a sign-in, never installs or updates Claude Code, and never writes Claude Code's settings outside `~/Hydra-OS`, nor anything in `~/.claude`. Claude Code's own plugin commands, run in your chat after your yes, do the installing.
 
 ## What's here
 
