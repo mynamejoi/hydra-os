@@ -19,37 +19,33 @@ import os
 from . import config as cfg
 from . import catalog, files, panel, registry, settings, sources, think, you
 
-# The first session's lines, with {name}, {goal} and {number} filled in. The no-iPhone path's three lines match what
-# Wellbeing reads.
+# The first session's lines, with {name}, {goal} and {number} filled in. The export's steps and the logging line are
+# Wellbeing's own, marked on its page by its export-step and log-workout saves.
 BACK =("What's one thing you're working toward right now? Say it however it comes, and I'll shape it with you.")
 NOTHING = ("No rush. People often start with something like \"Walk three times a week\" or \"Read 12 books this year\". "
            "Pick one, change one, or skip it for now.")
-COUNTS = "Here's how I'd put it: \"{goal}\". Wellbeing can count that from your iPhone's Health data. Save it?"
-BY_HAND = ("Here's how I'd put it: \"{goal}\", starting from {number} today. No page here counts that yet, so tell me when "
-           "it moves and I'll keep it up to date. Save it?")
-SAVED_HAND = "Saved. It's on Home and Goals now."
-SAVED_COUNTS = (SAVED_HAND + " To count it, Wellbeing needs your iPhone's Health data, about ten minutes with your phone. "
-                "Now or later?")
-CONNECTING = ("Wellbeing is open beside us with the steps. On your iPhone, open Health, tap your picture, then Export All "
-              "Health Data, and AirDrop it to this Mac. Drop the file on the Wellbeing page, not into our chat. Tell me "
-              "when it's in.")
-NO_IPHONE = ("No iPhone? Wellbeing can also read a spreadsheet you keep, with a row for each day, or I can keep this goal "
-             "up to date by hand. Which would you like?")
-SHEET = ("Make a spreadsheet with two columns, Date and Workouts, one row a day, like 2026-11-23 and walk. Save it as a CSV "
-         "file and drop it on the Wellbeing page, not into our chat. Tell me when it's in.")
+# a goal they state is saved at once, with Undo on its page, and never asked "Save it?"
+SAVED = "Saved: \"{goal}\". It's on Home and Goals now, with Undo on Goals if it isn't right."
+SAVED_COUNTS = (SAVED + " Wellbeing counts it once your iPhone's Health export is in. It takes about ten minutes with "
+                "your phone, and I'll walk you through it whenever you say.")
+SAVED_HAND = ("Saved: \"{goal}\", starting from {number} today. It's on Home and Goals now, with Undo on Goals if it "
+              "isn't right. No page counts it yet, so tell me when it moves and I'll keep it up to date.")
+CONNECTING = ("Wellbeing is open beside us, with the export's steps. First, on your iPhone: open the Health app, tap your "
+              "picture or initials, then Export All Health Data.")
+STEP_TWO = "Next, AirDrop it to this Mac."
+STEP_THREE = "Last, drop it on the Wellbeing page, not into our chat."
+NO_IPHONE = ("No iPhone? Tell me about a workout and I'll log it, and Wellbeing counts it toward your goal. Or I can keep "
+             "this goal up to date by hand. Which would you like?")
+LOG = "Tell me about a workout and I'll log it, and Wellbeing counts it toward your goal."
 IN = ("Wellbeing is reading it now, and your sleep shows in a few minutes. It's a snapshot, so add a fresh one whenever "
       "you want it current.")
-SHEET_IN = ("Wellbeing is reading it now, and your goal is counted in a few minutes. Add new days and drop it again "
-            "whenever you want it current.")
-LATER = "When you want your goal counted, say \"connect my Health data\"."
-# Home's welcome sheet asks their name and a later tip their city, so neither is a step of Claude's; the morning review
-# is asked right after the first goal is saved
-REVIEW_NOW =("Want a morning review? Each morning I'll read your pages and put the day's moves on Home. It uses a little "
-              "of your Claude plan.")
+LATER = "Whenever you want your goal counted, tell me."
+# Home greets them by their account's first name and a later tip asks their city, so neither is a step of Claude's; the
+# morning review is on from the install, its task made on their first message here, with no question
 CLOSE_NOW = "That's it for today, {name}. I'm here whenever you open Hydra-OS."
-# part 4's next step: their first goal, connecting what measures it, the morning review, or none left
+# part 4's next step: their first goal, connecting what measures it, the morning review, the close, or none left
 NEXT = {"goal": "their first goal", "connect": "their Health data", "review": "the morning review",
-        "done": "none, the first session is done"}
+        "close": "its close", "done": "none, the first session is done"}
 MEASURES = "health"  # the one app whose data the first session connects: Wellbeing
 PRIMER_MOST = 4000
 FOCUS_MOST = 600
@@ -98,7 +94,6 @@ def _ran(record):
     return False
 
 
-ANSWER_MOST = 80
 WHY_MOST = 80
 SINCE_FILE = "since.json"  # in <root>/hydra/panel/: what the last message saw, for the "since" line
 
@@ -174,19 +169,6 @@ def since(root, write=True):
     return "Since their last message: %s." % "; ".join(items) if items else ""
 
 
-def _answers(root):
-    """Each goal's latest answer under Claude asks, in their words, cut to 80 characters: Goals' answers.jsonl lines that
-    name their goal, so the chat sees what they answered on a
-    page."""
-    entry = registry.app(root, "goals") or {}
-    out = {}
-    for line in files.read_lines(os.path.join(entry.get("record") or "", "answers.jsonl")):
-        if isinstance(line.get("goal"), str) and isinstance(line.get("words"), str) and line["words"].strip():
-            words = " ".join(line["words"].split())
-            out[line["goal"]] = words if len(words) <= ANSWER_MOST else words[:ANSWER_MOST - 3].rstrip() + "..."
-    return out
-
-
 def _goals(root):
     doc = files.read_json(os.path.join(root, "yours", "goals.json"), {})
     return [g for g in (doc.get("goals") or []) if isinstance(g, dict) and g.get("status", "active") == "active"
@@ -201,8 +183,9 @@ def _measured(goals, rows):
 
 def next_step(root, goals=None, rows=None):
     """The first session's next unfinished step, worked out from their files: "goal" until a goal is set or skipped;
-    "connect" while a goal Wellbeing counts has no Wellbeing data and it isn't put off; "review" until it's answered;
-    then "done". Home's welcome sheet asks their name, and a tip their city, so neither is a step of Claude's."""
+    "connect" while a goal Wellbeing counts has no Wellbeing data and it isn't put off; "review" while the morning
+    review's task isn't made, or turned off; "close" once, when Wellbeing's data came in during the first session; then
+    "done". Home greets them by name, and a tip asks their city, so neither is a step of Claude's."""
     skipped = you.skipped(root)
     goals = _goals(root) if goals is None else goals
     if not goals and "goal" not in skipped:
@@ -210,14 +193,17 @@ def next_step(root, goals=None, rows=None):
     measured, sourced = _measured(goals, sources.read(root) if rows is None else rows)
     if measured and not sourced and "connect" not in skipped:
         return "connect"
-    return "review" if "review" not in settings.read(root) else "done"
+    if "review" not in settings.read(root):
+        return "review"
+    # every other way the first session ends, Claude says the close in the same message; data that came in says it next
+    return "close" if measured and sourced and you.first_at(root) in ("goal", "connect") else "done"
 
 
 FIRST_STEPS_NOW = ("5. The first session, a step at a time: their first goal, then their Health data when Wellbeing "
-                   "counts it, then the morning review, then the close. Home's welcome sheet asks their name, so never "
-                   "ask it, and a tip offers their city another day. Each step's lines come with their messages, worked "
-                   "out from their files: say them in your own words, keeping what each says, with {name}, {goal} and "
-                   "{number} filled in.")
+                   "counts it, then the close; the morning review's task comes first, with no question. Home greets "
+                   "them by name, so never ask it, and a tip offers their city another day. Each step's lines come "
+                   "with their messages, worked out from their files: say them in your own words, keeping what each "
+                   "says, with {name}, {goal} and {number} filled in.")
 STEP_OPEN = "Hydra-OS's first session, now at %s. Guidance for this message:"
 # the morning review's own session, in place of the first session's steps
 REVIEW_ONLY = ("This session is the morning review's own, with nobody there to answer. Open nothing, take no "
@@ -234,30 +220,48 @@ def review_session(prompt):
 
 def step_now(root, env=None, session=""):
     """The per-message guidance while the first session is unfinished: the current step's lines and what-ifs, worked
-    out live from the files, outside any data block. "" once it's done."""
+    out live from the files, outside any data block, with the morning review's task first while it isn't made. "" once
+    it's done. It keeps the step it gave in you.json's first_at, so the close is said once."""
     step = next_step(root)
+    at = you.first_at(root)
+    if step != at and (step != "done" or at):
+        you.mark_first(root, step)
     if step == "goal":
         lines = ('You can\'t see Home, so go by their message. If they only say they\'re back: "%s" If nothing comes to '
-                 'mind: "%s" Shape the goal with Goals\' steps, {goal} being Goals\' read-back. When the read-back says '
-                 'Wellbeing counts it, and only then: "%s" By hand, asking its number today first, as Goals\' skill does: '
-                 '"%s" After their yes, save it, then, Wellbeing counting it: "%s" By hand: "%s" and, in the same message, '
-                 'the morning review\'s question: "%s" If they skip it, run hydra first skip goal, then ask the morning '
-                 'review\'s question.' % (BACK, NOTHING, COUNTS, BY_HAND, SAVED_COUNTS, SAVED_HAND, REVIEW_NOW))
+                 'mind: "%s" Shape the goal with Goals\' steps and save it at once with Goals\' save, asking nothing, '
+                 '{goal} being Goals\' read-back. When the read-back says Wellbeing counts it, and only then: "%s" By '
+                 'hand, asking its number today first, as Goals\' skill does: "%s" and the close. If they skip it, run '
+                 'hydra first skip goal and say the close. The close: "%s"' % (BACK, NOTHING, SAVED_COUNTS, SAVED_HAND,
+                                                                             CLOSE_NOW))
     elif step == "connect":
-        lines = ('Their Health data, for the goal Wellbeing counts. Now: open Wellbeing\'s page in that tab, and say: "%s" '
-                 'No iPhone: "%s" A spreadsheet: "%s" By hand: move the goal to by hand with Goals\' steps. Later: run '
-                 'hydra first skip connect, say "%s" and, in the same message, the morning review\'s question: "%s"'
-                 % (CONNECTING, NO_IPHONE, SHEET, LATER, REVIEW_NOW))
-    elif step == "review":
-        lines = ('If they just said their data is in: "%s", or for a spreadsheet: "%s" Then, in the same message, if '
-                 'you haven\'t asked yet: "%s" On a yes, create a scheduled task, from this conversation, with the Claude '
-                 'app\'s own scheduled-task tool: named "%s", daily at %s, notifyOnCompletion false, its prompt exactly: %s '
-                 'Then run hydra settings set review on, and say the close. On "Not now" or a no, run hydra settings set '
-                 'review off, never ask again, and say the close. The close: "%s"'
-                 % (IN, SHEET_IN, REVIEW_NOW, think.NAME, think.AT, think.task_prompt(root), CLOSE_NOW))
+        lines = ('Their Health data, for the goal Wellbeing counts, led only when they want to do it now: open '
+                 'Wellbeing\'s page in that tab, say "%s" and run hydra act health export-step --step=1 --yes. Then one '
+                 'line a step, each after they say it\'s done: "%s" with --step=2, then "%s" with --step=3. No iPhone: '
+                 '"%s" For logging, run hydra first skip connect, say "%s" and the close; log each workout they tell you '
+                 'with hydra act health log-workout --kind=<walk|run|ride|swim|lift|yoga|row> --day=<YYYY-MM-DD> '
+                 '[--minutes=<n>], its read-back first, then --yes. By hand: move the goal to by hand with Goals\' steps, '
+                 'then the close. If they\'d rather wait: run hydra first skip connect, say "%s" and the close. The '
+                 'close: "%s"' % (CONNECTING, STEP_TWO, STEP_THREE, NO_IPHONE, LOG, LATER, CLOSE_NOW))
+    elif step in ("review", "close"):
+        lines = ('If their Health data just came in: "%s" Then, if you haven\'t said it yet, the close: "%s"'
+                 % (IN, CLOSE_NOW))
     else:
         return ""
-    return "%s %s%s" % (STEP_OPEN % NEXT[step], lines, NAME_CUT if not you.name(root) else "")
+    first = review_make() if "review" not in settings.read(root) else ""
+    return "%s %s%s%s" % (STEP_OPEN % NEXT[step], first, lines, NAME_CUT if not you.name(root) else "")
+
+
+def review_task():
+    """The morning review's scheduled task, as Claude makes it: from the conversation it's asked in, so it runs in the
+    Hydra-OS folder."""
+    return ('create the morning review\'s scheduled task from this conversation with the Claude app\'s own '
+            'scheduled-task tool, unless that tool already lists one by its name: named "%s", daily at %s, '
+            'notifyOnCompletion false, its prompt exactly: %s' % (think.NAME, think.AT, think.task_prompt()))
+
+
+def review_make():
+    """The morning review's task, made by Claude with no question: the install said it's on, and Help turns it off."""
+    return "First, with no question, as the install said: %s Then run hydra settings set review on. " % review_task()
 
 
 def primer(root):
@@ -289,7 +293,7 @@ def primer(root):
     known = sources.names(root)  # a recorded source by its page's name for its id
     src_lines = ["- %s feeds %s%s" % (q(sources.label(r, known)), q(titles.get(r.get("app"), r.get("app", ""))),
                                       ", account %s" % q(r["account"]) if r.get("account") else "") for r in rows]
-    said, read = _answers(root), _readings(root)
+    read = _readings(root)
     goal_lines = []
     for g in goals:
         by = (g.get("measured_by") or {}).get("app") if isinstance(g.get("measured_by"), dict) else None
@@ -297,11 +301,10 @@ def primer(root):
         state = " \u00b7 ".join(str(x) for x in (r.get("word"), r.get("caption"), r.get("figure")) if x)
         to = _data_to(root, by, g.get("id")) if by else ""
         why = r.get("why") or g.get("why")
-        goal_lines.append("- %s%s%s%s%s%s" % (
+        goal_lines.append("- %s%s%s%s%s" % (
             q(g["text"]), ", counted by %s" % q(titles.get(by, by)) if by else "",
             ", now %s" % q(state) if state else "", ", its data to %s" % q(to) if to else "",
-            ", why: %s" % q(_cut(why, WHY_MOST)) if isinstance(why, str) and why.strip() else "",
-            ", their latest answer about it: %s" % q(said[g["id"]]) if g.get("id") in said else ""))
+            ", why: %s" % q(_cut(why, WHY_MOST)) if isinstance(why, str) and why.strip() else ""))
     sections = [("Installed pages:", app_lines or ["- None yet."], [q(titles[a["id"]]) for a in apps] or ["none yet"])]
     sections += [(t, items, names) for t, items, names in (
         ("Connected sources, by name:", src_lines, [q(sources.label(r, known)) for r in rows]),
@@ -332,8 +335,9 @@ def primer(root):
               "answer when you ask their name is the yes for hydra name set. Never ask for a password or a key here, but "
               "a key from their shop receipt goes to hydra add --key. A page added from the shop is set up with hydra "
               "setup <its id>, which prints its own steps: its own skills come only in the next chat. hydra think is "
-              "the morning review task's own: run it only when that task's prompt asks. When they want the review now, "
-              "start the \"%s\" task now with the Claude app's own scheduled-task tool, so it runs in its own session. "
+              "the morning review task's own: run it only when that task's prompt asks. When they want the review now, or "
+              "a page's setup asks for its first read, start the \"%s\" task now with the Claude app's own "
+              "scheduled-task tool, so it runs in its own session. "
               "hydra helpers on or off sets whether its two helpers start at login: say what changes, and run it only "
               "after their yes." % think.NAME)
     notes = ""
@@ -437,9 +441,11 @@ def taps(root, now=None):
     kinds = []
     for r in panel.open_requests(root, now):
         kind = r.get("kind")
-        if kind in TAPS and kind not in kinds and not (kind == "repair" and r.get("app")):
+        if (kind in TAPS or kind == "review") and kind not in kinds and not (kind == "repair" and r.get("app")):
             kinds.append(kind)
-    return " ".join([TAPS_OPEN] + [TAPS[k] for k in kinds] + [TAPS_DONE]) if kinds else ""
+    said = [("Turn on for the morning review on Help: with no question, %s" % review_task()) if k == "review"
+            else TAPS[k] for k in kinds]
+    return " ".join([TAPS_OPEN] + said + [TAPS_DONE]) if kinds else ""
 
 
 def focus(root, now=None):

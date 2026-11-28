@@ -302,14 +302,13 @@ def read_goal(goal, entry, app, today, stale=False, move=None, quiet=False):
         who = _who(goal, read, app)
         caption = "%s. %s" % (measured, who)
         needs = ((app or {}).get("needs") or "").strip()
-        if not app:  # nothing here counts it
-            caption, step = "Not counted yet.", "Tell Claude to keep it by hand."
+        if not app:  # nothing here counts it: Goals keeps such a goal by hand, at once
+            caption = "Not counted yet."
         elif read and app.get("installed") and drop and needs and not app.get("has_source"):  # no data in yet
             caption, step = "Not counted yet.", "%s needs %s." % (app["title"], needs.split(" ", 1)[1] if " " in needs else needs)
             do = dict(drop, words=needs)
     elif today > by:
-        state, word, caption = "missed", "Missed", "Its date has passed."
-        step = "Tell Claude a new date, or to set it aside."
+        state, word, caption = "missed", "Missed", "Its date has passed."  # its two buttons, on the goal
     elif pace not in PACE_WORDS or stale:
         as_of = moment(entry.get("as_of"))
         state, word, caption = "unknown", "Can't tell yet", "As of " + short_day(as_of.date()) if as_of else ""
@@ -355,8 +354,22 @@ def read_goal(goal, entry, app, today, stale=False, move=None, quiet=False):
         "reaches": reaches if _is_number(reaches) else None,
         "points": (entry.get("points") or []) if entry else [], "changes": (entry.get("changes") or []) if entry else [],
         "counting": (entry.get("counting") or "") if entry else "", "why_pace": (entry.get("why") or "") if entry else "",
-        "as_of": (entry.get("as_of") or "") if entry else "",
+        "as_of": (entry.get("as_of") or "") if entry else "", "then": _then(entry, goal.get("id", "")),
     }
+
+
+def _then(entry, gid):
+    """One more move of Goals' own that the measuring page's entry offers for this goal, as "Count it in nights":
+    {"words", "act", "fields"}, its fields naming this goal, or None."""
+    t = entry.get("then") if isinstance(entry, dict) else None
+    if not isinstance(t, dict):
+        return None
+    words, name, fields = t.get("words"), t.get("act"), t.get("fields")
+    if (not isinstance(words, str) or not 0 < len(words.strip()) <= 40 or not isinstance(name, str) or not re.fullmatch(r"[a-z][a-z-]{0,23}", name)
+            or not isinstance(fields, dict) or fields.get("goal") != gid
+            or not all(isinstance(k, str) and isinstance(v, (str, int, float)) and not isinstance(v, bool) for k, v in fields.items())):
+        return None
+    return {"words": words.strip(), "act": name, "fields": fields}
 
 
 def tally(readings):
@@ -399,7 +412,9 @@ def sources_of(root):
 
 # Where a suggestion would show while they said no to the morning review: yours/settings.json's "review" is false.
 # Missing (not asked yet) or true changes nothing.
-REVIEW_OFF = "Suggestions start with the morning review. It uses some of your Claude plan each morning. To turn it on, tell Claude."  # what, then the cost, then how
+REVIEW_OFF = "Suggestions start with the morning review. It uses some of your Claude plan each morning."  # what, then the cost
+PAGE_REMOVE_ASK = "Remove %s? Its records go to the Trash, so you can take them back."  # asked on the page, in Remove's place
+REVIEW_ON = '<button type="button" class="alt" data-do="review" data-fields=\'{"on": true}\' data-then="hide">Turn on</button>'  # then how: on the page
 
 
 def review_off(settings):
@@ -417,8 +432,7 @@ def settings_of(root):
             "phone": got.get("phone") is True, "suggestions": got.get("suggestions") is not False,
             "review": got.get("review") if isinstance(got.get("review"), bool) else None,
             "walkthroughs": [w for w in seen if isinstance(w, str)] if isinstance(seen, list) else [],
-            "tips": {k: [i for i in v if isinstance(i, str)] for k, v in tips.items() if isinstance(k, str) and isinstance(v, list)} if isinstance(tips, dict) else {},
-            "welcome": got.get("welcome") == "seen"}
+            "tips": {k: [i for i in v if isinstance(i, str)] for k, v in tips.items() if isinstance(k, str) and isinstance(v, list)} if isinstance(tips, dict) else {}}
 
 
 def read_goals(root, today=None, app=None, now=None):
@@ -545,20 +559,27 @@ def goal_item(reading, home=False, under=""):
     return head + name + goal_bar(reading) + goal_status(reading) + move + under + "</li>"
 
 
-def field(ident, label, placeholder, maxlength=120, hint="done", label_cls="", short="", aria="", button="Save"):
+def field(ident, label, placeholder, maxlength=120, hint="done", label_cls="", short="", aria="", button="Save", kind="text", low=""):
     """One line to type in, with its label. Return saves it, and Save shows once there's something to save.
 
     label_cls  a style for the label ("tag"). short  a shorter placeholder for a phone, which the kit's script swaps in.
     aria       the field's name when it has no visible label: label is then "".
-    button     its button's word: "Send" for a box that hands its words to Claude.
+    button     its button's word: "Send" for a box that hands its words to Claude; "" for none, where the page's own
+               script sends it (the Shop's key, which a paste sends).
+    kind       "date" for a date, from `low` on (a missed goal's new date).
     """
     head = ""
     if label:
         head = '<label%s for="%s">%s</label>' % (' class="%s"' % esc(label_cls) if label_cls else "", esc(ident), esc(label))
+    if kind == "date":
+        return ('%s<div class="fld"><input type="date" id="%s"%s%s>%s</div>') % (
+            head, esc(ident), ' min="%s"' % esc(low) if low else "", ' aria-label="%s"' % esc(aria) if aria and not label else "",
+            '<button type="button" class="save" hidden>%s</button>' % esc(button) if button else "")
     return ('%s<div class="fld"><input type="text" id="%s" maxlength="%d" enterkeyhint="%s" autocomplete="off"%s%s%s>'
-            '<button type="button" class="save" hidden>%s</button></div>') % (
+            '%s</div>') % (
         head, esc(ident), maxlength, hint, ' placeholder="%s"' % esc(placeholder) if placeholder else "",
-        ' data-short="%s"' % esc(short) if short else "", ' aria-label="%s"' % esc(aria) if aria and not label else "", esc(button))
+        ' data-short="%s"' % esc(short) if short else "", ' aria-label="%s"' % esc(aria) if aria and not label else "",
+        '<button type="button" class="save" hidden>%s</button>' % esc(button) if button else "")
 
 
 def saved_line(ident, undo=True):
@@ -593,11 +614,12 @@ def goal_field(page_app=None, first=True, examples=False, label=None, placeholde
     return out
 
 
-def goals_band(readings, tally_words="", page_app=None, new=False, block="goals", under=None):
+def goals_band(readings, tally_words="", page_app=None, new=False, block="goals", under=None, ask=True):
     """The goals band at the top of an app's page: the goals this app measures, in Home's band style.
 
-    With no goal, or while the page is just installed, it carries the line that points a new goal to Claude. `under`
-    is what goes under a goal, by its id: Goals' offer to this page.
+    With no goal, or while the page is just installed, it carries the line that points a new goal to Claude, while
+    `ask`: only when the person has no goal at all. `under` is what goes under a goal, by its id: Goals' offer to
+    this page.
     """
     under = under or {}
     head = ('<div class="gt"><h2 class="h" id="h-%s"><a href="/goals/" target="_top">Goals</a></h2>%s</div>'
@@ -608,7 +630,7 @@ def goals_band(readings, tally_words="", page_app=None, new=False, block="goals"
         rows = "".join('<li%s><span class="gn">%s</span>%s%s%s</li>' % (_attrs(*_goal_style(r)), esc(r["text"]), goal_bar(r), goal_status(r),
                                                                      under.get(r["id"], "")) for r in readings)
         body = '<div class="g0"><ul class="g0l">%s</ul>%s</div>' % (rows, goal_field(
-            page_app, label="Add a goal" if readings else "No goal yet", placeholder="Add a goal in a line, then Return"))
+            page_app, label="Add a goal" if readings else "No goal yet", placeholder="Add a goal in a line, then Return") if ask else "")
     return '<section class="t gband" data-block="%s" aria-labelledby="h-%s">%s%s</section>' % (esc(block), esc(block), head, body)
 
 
@@ -786,22 +808,35 @@ def connect(app_id, words="Connect", service=None, label=None, kind="connect"):
                                                            data_service=service, aria_label=label), esc(words))
 
 
-def empty_state(symbol, line, action="", via="", steps=(), drop=""):
+def empty_state(symbol, line, action="", via="", steps=(), drop="", step=None, link=""):
     """An empty section: its symbol, one line on what will appear there, and the one thing it needs.
 
-    steps  a few plain lines, in order, for what to do first. drop  a drop place (drop_place()), in place of an action.
+    steps  a few plain lines, in order, for what to do first; step  which of them they're on, from 1, marked as the
+           current one (none when it's missing or out of range).
+    drop   a drop place (drop_place()), in place of an action. link  a link that leaves the page (out_link()), among
+           the actions.
     """
     out = '<div class="es">%s<p>%s</p>' % (icon(symbol), esc(line))
     lines = [t for t in steps or () if isinstance(t, str) and t.strip()]
+    on = step if isinstance(step, int) and not isinstance(step, bool) and 1 <= step <= len(lines) else 0
     if lines:
-        out += '<ol class="steps">%s</ol>' % "".join("<li>%s</li>" % esc(t) for t in lines)
+        out += '<ol class="steps">%s</ol>' % "".join(
+            '<li class="on" aria-current="step">%s</li>' % esc(t) if i == on else "<li>%s</li>" % esc(t) for i, t in enumerate(lines, 1))
     if drop:
         out += drop
-    if action:
-        out += '<p class="acts">%s</p>' % action
+    if action or link:
+        out += '<p class="acts">%s</p>' % (action + link)
     if via:
         out += '<p class="via">%s</p>' % esc(via)
     return out + "</div>"
+
+
+def needs_setup(column):
+    """Whether a page has something only the person can set up: its column.json's home line names the one thing it
+    needs, a connector to connect or a file to give. A page that needs neither, as Research doesn't, says nothing
+    there and starts by itself, so it has no Set up."""
+    needs = column.get("home").get("needs") if isinstance(column, dict) and isinstance(column.get("home"), dict) else ""
+    return isinstance(needs, str) and bool(needs.strip())
 
 
 def file_only(column):
@@ -915,18 +950,18 @@ def plain(value):
     return " ".join(value.split()) if isinstance(value, str) else ""
 
 
-def out_link(link):
-    """A link that leaves the page, {"href", "text"} (a find's source, a release note, a thread in Gmail): https to a
-    named host, with no user info, port, space or hidden character, in at most 1,000 characters, its words plain and at
-    most 80, else nothing. The kit's script opens it through Home's server in the person's own browser, never inside the
-    pane, where Claude can read what a page shows."""
+def out_link(link, cls=""):
+    """A link that leaves the page, {"href", "text"} (a find's source, a release note, a thread in Gmail, an empty
+    state's way in, drawn as a button with cls "cta"): https to a named host, with no user info, port, space or hidden
+    character, in at most 1,000 characters, its words plain and at most 80, else nothing. The kit's script opens it
+    through Home's server in the person's own browser, never inside the pane, where Claude can read what a page shows."""
     if not isinstance(link, dict):
         return ""
     href, text = link.get("href"), plain(link.get("text"))
     if (not isinstance(href, str) or len(href) > 1000 or not text or len(text) > 80
             or not re.fullmatch(r"https://[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+([/?#][^\s\"'<>\\`]*)?", href)):
         return ""
-    return '<a href="%s" data-open rel="noopener noreferrer">%s</a>' % (esc(href), esc(text))
+    return '<a%s href="%s" data-open rel="noopener noreferrer">%s</a>' % (' class="%s"' % esc(cls) if cls else "", esc(href), esc(text))
 
 
 def question(q, app_id, tag="", accent=None, words=None, ident=None, tint_app=None, saved=None):
@@ -1186,6 +1221,15 @@ def _goal_entry(ent, act, value, placeholder, maxlength, aria, gid):
         field(ent + "-i", "", placeholder, maxlength=maxlength, aria=aria), saved_line(ent + "-u"))
 
 
+def _date_entry(gid, today):
+    """A missed goal's new date: a date field in place of its step, from tomorrow, saved through Goals' set with the goal
+    fixed, and Undo."""
+    tomorrow = (today + _dt.timedelta(days=1)).isoformat()
+    return ('<div%s><div class="edit" hidden>%s<button type="button" class="lk" data-cancel>Cancel</button></div>%s</div>') % (
+        _attrs("ent", id="e-date-" + gid, data_act="set", data_field="by", data_value="", **_saves(gid)),
+        field("e-date-%s-i" % gid, "", "", aria="Its new date. Return saves it.", kind="date", low=tomorrow), saved_line("e-date-%s-u" % gid))
+
+
 def _set_entry(gid, line):
     return _goal_entry("e-set-" + gid, "set", line, "Like '12 swims by Sep 1'", 80, "Target and date. Return saves it.", gid)
 
@@ -1267,18 +1311,23 @@ def goal_detail(reading, today, shown=True, you_said=None):
     step, do, acts = reading.get("step") or "", reading.get("do"), ""
     missed = reading["state"] == "missed" and reading["in_hand"]
     if missed:  # its step, as two buttons
-        acts = ('<button type="button" class="tb" data-edit="e-set-%s">Set a new date</button>'
-                '<button type="button" class="tb"%s>Set it aside</button>') % (esc(gid), _attrs(
+        acts = ('<button type="button" class="tb" data-edit="e-date-%s">Set a new date</button>'
+                '<button type="button" class="tb"%s>Set aside</button>') % (esc(gid), _attrs(
                     data_act="aside", **_saves(gid)))
     elif step and step not in said:
         said = "%s. %s" % (said.rstrip("."), step)
+    then = reading.get("then")
+    if then and reading["in_hand"]:  # the measuring page's one more move, through Goals' own action, with Undo
+        acts += '<button type="button" class="tb"%s>%s</button>' % (_attrs(
+            data_act=then["act"], data_app="goals", data_undo="undo", data_takes="change",
+            data_fixed=json.dumps(then["fields"], separators=(",", ":"))), esc(then["words"]))
     if isinstance(do, dict) and do.get("words") and do.get("link"):
         acts += '<a class="tb" href="%s" target="_top">%s</a>' % (esc(page_link(do["link"])), esc(do["words"]))
     parts.append(("auto", '<p class="dsay">%s</p>' % esc(said)))  # each part its own row, one element each,
     if takes:  # so the row that grows is the plot's
         parts.append(("auto", '<p class="via">%s</p>' % esc(takes)))
     if missed:  # the date field opens in place of the step, as the kit opens a line in place of its `.meta`
-        parts.append(("auto", '<div class="dstep"><p class="acts meta">%s</p>%s</div>' % (acts, _set_entry(gid, reading["line"]))))
+        parts.append(("auto", '<div class="dstep"><p class="acts meta">%s</p>%s</div>' % (acts, _date_entry(gid, today))))
     elif acts:
         parts.append(("auto", '<p class="acts">%s</p>' % acts))
     if isinstance(you_said, dict) and isinstance(you_said.get("words"), str) and you_said["words"].strip():  # what they said, in their words
@@ -1288,7 +1337,7 @@ def goal_detail(reading, today, shown=True, you_said=None):
         why = reading["move"].get("why", "")
         parts.append(("auto", '<p class="dnext">Next: %s%s</p>' % (esc(reading["move"]["text"]), '<span>%s</span>' % esc(why) if why else "")))
     elif reading.get("review_off"):  # where Next would be, while they said no to the morning review
-        parts.append(("auto", '<p class="dnext nrv">%s</p>' % esc(REVIEW_OFF)))
+        parts.append(("auto", '<p class="dnext nrv">%s %s</p>' % (esc(REVIEW_OFF), REVIEW_ON)))
     plot = goal_plot(reading, today) or '<p class="via">%s</p>' % esc(NO_PLOT)
     parts.append(("minmax(0,1fr)", '<div class="picw">%s</div>' % plot))
     counted = last_counted(reading)
@@ -1418,34 +1467,6 @@ def tips_html(app_id, tips):
             ' data-sel="%s"' % esc(t["sel"]) if t.get("sel") else "", esc(t["text"])) for t in tips))
 
 
-# A sheet: Home's welcome, What's new, or a
-# page's connect ask, one at a time over the page dimmed behind it. Solid and 420 wide, its title 28/34 semibold, row
-# titles 15 semibold and row text 13 in the secondary ink, 24 inside, and one primary button, 44 tall.
-def sheet_html(kind, title, rows=(), lead="", field=None, go="Continue", later="", app="", tip="", esc_go=False):
-    """A sheet's markup, hidden until the kit's script shows it. kind is "welcome", "whats-new" or "ask"; rows are up to
-    three (icon, title, line, link), link being (href, words) or None; field is {"label", "placeholder", "under"}; go is
-    the primary button's words and later a quiet second's ("Not now"). Escape is `later`, or `go` with esc_go."""
-    items = "".join('<li>%s<div>%s<p>%s%s</p></div></li>' % (
-        icon(sym), "<b>%s</b>" % esc(name) if name else "", esc(line), ' <a href="%s" target="_top">%s</a>' % (esc(link[0]), esc(link[1])) if link else "")
-        for sym, name, line, link in list(rows)[:3])
-    box = '<h2 id="sh-h">%s</h2>' % esc(title)
-    if lead:
-        box += '<p class="shl" id="sh-p">%s</p>' % esc(lead)
-    if items:
-        box += '<ul class="shr">%s</ul>' % items
-    if field:
-        under = field.get("under") or ""
-        box += ('<div class="shf"><label for="sh-f">%s</label><input type="text" id="sh-f" maxlength="60" autocomplete="given-name" enterkeyhint="done" '
-                'spellcheck="false" placeholder="%s"%s>%s</div>') % (esc(field["label"]), esc(field.get("placeholder") or ""),
-                                                                      ' aria-describedby="sh-o"' if under else "", '<p class="sho" id="sh-o">%s</p>' % esc(under) if under else "")
-    box += '<p class="said" role="status" aria-live="polite"></p><div class="shb"><button type="button" class="shgo" data-sheet-go>%s</button>%s</div>' % (
-        esc(go), '<button type="button" class="shno" data-sheet-later>%s</button>' % esc(later) if later else "")
-    return ('<div class="sheet" data-sheet="%s"%s%s%s hidden><div class="shv" aria-hidden="true"></div>'
-            '<div class="sh" role="dialog" aria-modal="true" aria-labelledby="sh-h"%s>%s</div></div>') % (
-        esc(kind), ' data-app="%s"' % esc(app) if app else "", ' data-tip="%s"' % esc(tip) if tip else "", ' data-esc="go"' if esc_go else "",
-        ' aria-describedby="sh-p"' if lead else "", box)
-
-
 # The Shop: the main app's catalog of pages to add, each explained, with where it stands, and the buying path: no
 # price until the catalog gives one, and "Get" only once a page has a checkout.
 CATALOG = os.path.join(os.path.dirname(KIT), "home", "catalog.json")
@@ -1458,7 +1479,7 @@ ASK_ABOUT = "Ask Claude about it"
 KEY_LABEL = "Have a key? Paste it here."
 # Under the foot's line, quiet and plain
 SHOP_AI = ("Hydra-OS uses Claude, an AI. Its answers can be wrong.", "Hydra-OS isn't affiliated with or endorsed by Anthropic.")
-KEY_HINT = "Your key, then Return"  # what to do, as Claude asks' field says it
+KEY_HINT = "Your key"  # a paste adds its page at once; Return sends a typed one
 SHOP_PICTURES = os.path.join(os.path.dirname(KIT), "home", "shop")  # each catalog page's picture, light and dark
 PICTURE_SIZE = (450, 312)  # as tests/shop_pictures.mjs makes them: the top of the page at 750 wide, at 0.6
 
@@ -1563,8 +1584,7 @@ def shop_body(pages, readings, installed=(), have=None, foot="", pending=()):
     "Get <Page>" shows only while it's on sale with a checkout, and opens the checkout in your own browser; Update
     shows while a newer version is ready; "Ask Claude about it" files an `about` request. A page in the rail that
     hasn't run yet (`pending`, its ids) has "Set up <Page>", which hands Claude a `setup` request. Then the
-    foot: the catalog's line and "Have a key? Paste it here.", with a place under its answer for the Set up button of a
-    page a key just added. Home's own script (home/shop.js) keeps each card's state
+    foot: the catalog's line and "Have a key? Paste it here." Home's own script (home/shop.js) keeps each card's state
     from Home's server. `have` is bought(root). Returns (header, main)."""
     have = have or {}
     pages = [p for p in pages if on_sale(p)]  # a card with empty buying fields never shows
@@ -1598,10 +1618,9 @@ def shop_body(pages, readings, installed=(), have=None, foot="", pending=()):
     if not cards:
         return head, ""
     foot = foot.strip() if isinstance(foot, str) else ""
-    key = ('<section class="t sf">%s%s%s<p class="said" id="shop-said" role="status" aria-live="polite"></p>'
-           '<p class="act0 su" id="shop-next" hidden></p></section>') % (
+    key = '<section class="t sf">%s%s%s<p class="said" id="shop-said" role="status" aria-live="polite"></p></section>' % (
         '<p class="via">%s</p>' % esc(foot) if foot else "", "".join('<p class="via">%s</p>' % esc(t) for t in SHOP_AI),
-        field("shop-key", KEY_LABEL, KEY_HINT, maxlength=160, button="Add"))
+        field("shop-key", KEY_LABEL, KEY_HINT, maxlength=160, button=""))
     return head, '<section class="shop" data-block="shop" aria-label="Pages you can add">%s</section>\n%s' % (cards, key)
 
 
@@ -1804,30 +1823,9 @@ class Page(object):
         self.as_of = (self.say.get("as_of") if self.say else None) or self.now.isoformat(timespec="seconds")
         mine = None if self.app == "goals" else self.app  # Goals' own page is every goal; another app's band is the goals it measures
         self.goals = read_goals(root, self.today, mine, self.now) if root else {"goals": [], "record": [], "tally": ""}
-        self.offers, self.offered = self._offers(root) if root and mine else ({}, [])
+        # whether the person has any goal in hand, anywhere: the band's line for a first goal is only for no goal at all
+        self.any_goals = bool(self.goals["goals"] if not mine or not root else read_goals(root, self.today, None, self.now)["goals"])
         self._drawn = None
-
-    def _offers(self, root):
-        """Goals' one offer to this page, read from Goals'
-        home.json as Home reads it: {goal id: its question}, and the readings of those goals in hand that this page
-        doesn't count yet, which its band holds too, so the offer sits under its goal here as on Home."""
-        home = read_json(os.path.join(record_of(root, "goals", self.apps), "home.json"), {})
-        every = read_goals(root, self.today, None, self.now)["goals"]
-        hand = {r["id"]: r for r in every}
-        texts = {r["id"]: r["text"] for r in every}
-        offers = {}
-        for q in (home.get("questions") if isinstance(home, dict) else None) or []:
-            if offer_app(q) == self.app and q.get("goal") in hand:
-                q = fill_goal(q, texts)
-                if q:
-                    offers.setdefault(q["goal"], q)
-        mine = {r["id"] for r in self.goals["goals"]}
-        return offers, [hand[g] for g in offers if g not in mine]
-
-    def _offer(self, goal_id):
-        """The offer under a goal in this page's band, as Home's band draws it: in this page's colour, through Goals' answer."""
-        q = self.offers.get(goal_id)
-        return question(q, "goals", accent=self.column.get("accent"), tint_app=self.app, saved="Saved.") if q else ""
 
     # What say.json gives a block
 
@@ -1895,9 +1893,11 @@ class Page(object):
     def _goals(self, block, data):
         if self.app == "goals":
             return self._panes(block, data)
-        readings = self.goals["goals"] + self.offered  # and a goal Goals offers this page, with its offer under it
-        says = tally(readings) if self.offered else self.goals["tally"]
-        out = goals_band(readings, says, page_app=self.app, new=self.new, block=block["id"], under={g: self._offer(g) for g in self.offers})
+        readings = self.goals["goals"]
+        if not readings and self.any_goals:  # none of theirs counted here: the band stays quiet
+            return "", None
+        says = self.goals["tally"]
+        out = goals_band(readings, says, page_app=self.app, new=self.new, block=block["id"], ask=not self.any_goals)
         figures = [{"label": r["text"], "value": " · ".join(x for x in (r["word"], r["caption"]) if x)} for r in readings]
         return out, {"id": block["id"], "title": "Goals", "says": says, "figures": figures,
                      "items": [{"id": r["id"], "label": r["text"]} for r in readings] if readings and not self.new else []}
@@ -1925,7 +1925,7 @@ class Page(object):
             drop = self._drop_place(empty.get("drop") or "Drop your file here.", empty.get("hint"))
             self._dropped = True
         return empty_state(empty.get("icon") or symbol, empty.get("line") or "Nothing here yet.", action, empty.get("via", ""),
-                           steps=empty.get("steps") or (), drop=drop)
+                           steps=empty.get("steps") or (), drop=drop, step=empty.get("step"), link=out_link(empty.get("link"), "cta"))
 
     def _drop_place(self, line, hint=None):
         source = upload_source(self.column)
@@ -1965,7 +1965,7 @@ class Page(object):
         lead = self.insight(bid)
         quiet = not moved and not self.suggestions() and self._review_off() and not any(b["type"] == "suggestions" for b in self.blocks)
         return ('<section data-block="%s" aria-labelledby="h-%s">%s<div class="row">%s</div>%s</section>' % (
-                    esc(bid), esc(bid), self._lane(block), out, '<p class="t nrv">%s</p>' % esc(REVIEW_OFF) if quiet else ""),
+                    esc(bid), esc(bid), self._lane(block), out, '<p class="t nrv">%s %s</p>' % (esc(REVIEW_OFF), REVIEW_ON) if quiet else ""),
                 {"id": bid, "title": block.get("title", ""), "says": lead["text"] if lead else cards[0].get("says", ""),
                  "figures": figures, "items": items})
 
@@ -2197,8 +2197,8 @@ class Page(object):
             if not self._review_off():
                 return "", None
             title = block.get("title") or "Claude suggests"
-            return (('<section class="t sec" data-block="%s" aria-labelledby="h-%s"><h2 class="h hh" id="h-%s">%s</h2><p class="nrv">%s</p></section>')
-                    % (esc(bid), esc(bid), esc(bid), esc(title), esc(REVIEW_OFF)), {"id": bid, "title": title, "says": REVIEW_OFF, "figures": [], "items": []})
+            return (('<section class="t sec" data-block="%s" aria-labelledby="h-%s"><h2 class="h hh" id="h-%s">%s</h2><p class="nrv">%s %s</p></section>')
+                    % (esc(bid), esc(bid), esc(bid), esc(title), esc(REVIEW_OFF), REVIEW_ON), {"id": bid, "title": title, "says": REVIEW_OFF, "figures": [], "items": []})
         cells = "".join('<div class="nmv"><b>%s</b><span>%s</span></div>' % (esc(s["text"]), esc(s.get("why", ""))) for s in hints)
         out = ('<section class="t sec" data-block="%s" aria-labelledby="h-%s"><h2 class="h hh" id="h-%s">%s</h2>'
                '<div class="sgs" style="--n:%d">%s</div></section>') % (esc(bid), esc(bid), esc(bid), esc(block.get("title") or "Claude suggests"), max(2, len(hints)), cells)
@@ -2396,7 +2396,7 @@ class Page(object):
         rest = [out.replace(AGAIN_SLOT, "" if self._dropped else self._again) for out in rest]
         if self._ready_to_set_up():
             rest.insert(0, self._ready_to_set_up())
-        body = "%s\n<main class=\"pg\">\n%s\n</main>\n%s" % (head, "\n".join(rest), footer(self.now))
+        body = "%s\n<main class=\"pg\">\n%s\n</main>\n%s" % (head, "\n".join(rest + [r for r in [self._remove_row()] if r]), footer(self.now))
         summary = {
             "contract": "summary/v1", "app": self.app, "built_at": self.now.isoformat(timespec="seconds"), "as_of": self.as_of,
             "headline": (self.say or {}).get("headline", "") if not self.new else self.home.get("line", ""),
@@ -2411,9 +2411,6 @@ class Page(object):
         tips = self.tips()
         if tips:  # its tips still to show, for the kit's script
             body += "\n" + tips_html(self.app, tips)
-        ask = self.ask()
-        if ask:  # its connect ask, on its open while no source is chosen
-            body += "\n" + sheet_html("ask", self.title, lead=ask["text"], go="Connect", later="Not now", app=self.app, tip=ask["id"])
         if self.preview:
             body += "\n" + layout_bar(self.app, self.preview)
         return document(self.app, self.title, body, accent=self.column.get("accent"), built_at=self.now.isoformat(timespec="seconds"),
@@ -2423,25 +2420,27 @@ class Page(object):
     def summary(self):
         return self._draw()[1]
 
+    def _remove_row(self):
+        """The page's own Remove, a quiet row at its foot, asked in its own place, then done by Home's server with no
+        Claude, and Home opens. None for Hydra-OS's own pages (the main app's, and Goals, which holds every goal), for
+        a page not in the registry, and for a page built with no root."""
+        entry = self.apps.get(self.app) if self.root else None
+        own = {a for e in self.apps.values() if isinstance(e, dict) and e.get("kind") == "main" for a in e.get("apps") or [] if isinstance(a, str)}
+        if not entry or entry.get("kind") == "main" or self.app in own or self.app == "goals":
+            return ""
+        return ('<p class="t rm"><button type="button" class="alt" data-do="remove" data-fields=\'{"app": "%s", "confirm": true}\' data-yes="Remove" '
+                'data-then="home" data-question="%s">Remove %s\u2026</button></p>') % (esc(self.app), esc(PAGE_REMOVE_ASK % self.title), esc(self.title))
+
     def _ready_to_set_up(self):
         """A page from the Shop that hasn't run yet (no say.json): one quiet line at the top of its page, "Finance is
         ready to set up." with Set up Finance, which hands Claude a setup request. "" once its first run has written
-        say.json, for a page that isn't in the Shop, and for a page built with no root."""
-        if not self.root or not self.new or self.app not in {p.get("id") for p in shop_doc(self.root)["pages"] if isinstance(p, dict)}:
-            return ""
+        say.json, for a page with nothing to set up (needs_setup), for a page that isn't in the Shop, and for a page
+        built with no root."""
+        if (not self.root or not self.new or not needs_setup(self.column)
+                or self.app not in {p.get("id") for p in shop_doc(self.root)["pages"] if isinstance(p, dict)}):
+            return ""  # a page with nothing to set up starts by itself
         return ('<p class="t upd" data-setup><span>%s is ready to set up.</span><button type="button" class="cta" data-connect '
                 'data-kind="setup" data-app="%s">Set up %s</button></p>') % (esc(self.title), esc(self.app), esc(self.title))
-
-    def ask(self):
-        """The page's connect ask: column.json's {"id": "<app>-connect", "text"} while no source is chosen for
-        the page and it isn't seen, else None. A page built with no root has none."""
-        got = self.column.get("ask")
-        if not self.root or not isinstance(got, dict) or self.sources:
-            return None
-        text = plain(got.get("text"))
-        if got.get("id") != "%s-connect" % self.app or not 0 < len(text) <= TIP_LONGEST or got["id"] in self.settings["tips"].get(self.app, []):
-            return None
-        return {"id": got["id"], "text": text}
 
     def tips(self):
         """This page's tips still to show (tips_of), those due today. A page built with no root has none."""

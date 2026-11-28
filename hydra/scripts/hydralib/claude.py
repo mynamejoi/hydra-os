@@ -36,6 +36,53 @@ def chat_claude(config, env=None):
     return config["claude"]
 
 
+ENGINES = os.path.join("Library", "Application Support", "Claude", "claude-code")  # the Claude app's own, in the home
+
+
+def _runs(path):
+    return isinstance(path, str) and os.path.isabs(path) and os.path.isfile(path) and os.access(path, os.X_OK)
+
+
+def app_engine(env=None, home=None):
+    """The Claude app's own Claude Code, its newest version: the one documented place Hydra-OS looks when the copy
+    config.json names is gone, as the app moves its copy at each of its updates. <version>/<build>/claude.app, run by
+    its bundle's own program, which is named claude. Under any HYDRA_TEST_ switch, only the folder HYDRA_TEST_ENGINES
+    names. None when there's none; Hydra-OS never installs or downloads Claude Code."""
+    import plistlib
+    import re
+    env = os.environ if env is None else env
+    if any(k.startswith("HYDRA_TEST_") for k in env):
+        top = env.get("HYDRA_TEST_ENGINES") or ""
+    else:
+        top = os.path.join(home or os.path.expanduser("~"), ENGINES)
+    try:
+        versions = [v for v in os.listdir(top) if re.fullmatch(r"\d+(?:\.\d+)*", v)] if top else []
+    except OSError:
+        return None
+    for version in sorted(versions, key=lambda v: tuple(int(p) for p in v.split(".")), reverse=True):
+        try:
+            builds = os.listdir(os.path.join(top, version))
+        except OSError:
+            continue
+        for build in sorted(builds, key=lambda b: os.path.getmtime(os.path.join(top, version, b)), reverse=True):
+            app = os.path.join(top, version, build, "claude.app")
+            try:
+                with open(os.path.join(app, "Contents", "Info.plist"), "rb") as f:
+                    program = plistlib.load(f).get("CFBundleExecutable")
+            except (OSError, ValueError, plistlib.InvalidFileException):
+                continue
+            path = os.path.join(app, "Contents", "MacOS", str(program or ""))
+            if program == "claude" and _runs(path):
+                return path
+    return None
+
+
+def step_claude(config, env=None):
+    """The Claude Code for a step a page's button started, with no chat: config.json's, the one the last Hydra-OS chat
+    ran on, while it's there, else the Claude app's own newest (app_engine)."""
+    return config["claude"] if _runs(config.get("claude")) else (app_engine(env) or config["claude"])
+
+
 def _env(claude_config="", base=None):
     env = dict(os.environ if base is None else base)
     env.pop("ANTHROPIC_API_KEY", None)

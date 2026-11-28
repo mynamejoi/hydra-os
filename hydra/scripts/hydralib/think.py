@@ -169,8 +169,15 @@ def take_answer(root, page, part=None, most=STDIN_MOST):
     return data.decode("utf-8", "replace")
 
 
+OFF = ("The morning review is off. Delete this scheduled task, \"%s\", with your scheduled-task tool, then stop."
+       % "Hydra-OS morning review")
+GONE = "If there's no hydra command here, delete this scheduled task with your scheduled-task tool, then stop."
+
+
 def task_prompt(root=None):
-    return "Run hydra think and follow what it prints."
+    """The scheduled task's whole prompt. The task deletes itself once the review is off (hydra think says so) or
+    Hydra-OS is gone (GONE), so neither leaves a run on their plan each morning."""
+    return "Run hydra think and follow what it prints. " + GONE
 
 
 def _spec(entry):
@@ -223,7 +230,7 @@ def prompt(config, now=None, cwd=None, session=None):
 def _prompt(config, now, cwd, given):
     root = config["root"]
     if settings.read(root).get("review") is False:
-        return ["The morning review is off. Nothing to do."]
+        return [OFF]
     files.write_json(os.path.join(root, "hydra", "think", "ran.json"), {"at": now.isoformat(timespec="seconds")})
     found = pages(root)
     held = [] if inside(root, cwd) else [e for e, spec in found if spec.get("connectors") is True]

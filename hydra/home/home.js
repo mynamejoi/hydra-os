@@ -22,13 +22,33 @@
     });
   }
 
-  /* The welcome sheet's name: the greeting takes it at once as the sheet goes, arriving with opacity and
-     a scale from .98, 300 ms, or a fade with reduced motion. Home's server builds Home again with it too. */
-  document.addEventListener('hydra:sheet', e => {
-    const h = $('[data-greet]'); if (!h || !e.detail || e.detail.kind !== 'welcome') return;
-    if (e.detail.name) h.dataset.name = e.detail.name;
-    kit.paintSky(); h.classList.remove('arrive'); void h.offsetWidth; h.classList.add('arrive');
-  });
+  /* Not you?: the name Home greets with, from the Mac account, changed on the page. Save sends it to Home's server, and
+     the greeting takes it at once, arriving with opacity and a scale from .98, 300 ms, or a fade with reduced motion; an
+     empty one means no name. The name is theirs then, so Not you? goes. */
+  { const nm = $('[data-rename]'), box = $('.nmf'), h = $('[data-greet]');
+    if (nm && box && h) {
+      const inp = $('input', box), save = $('.save', box), said = $('.said', box);
+      nm.addEventListener('click', () => { box.hidden = false; nm.hidden = true; if (save) save.hidden = false; inp.value = h.dataset.name || ''; inp.focus(); inp.select(); });
+      const go = () => {
+        const name = inp.value.trim().replace(/\s+/g, ' ');
+        if (save) save.disabled = true;
+        kit.send('POST', '/api/name', { name }).then(a => {
+          if (save) save.disabled = false;
+          if (!a || !a.ok) { said.textContent = a && typeof a.said === 'string' && a.said ? a.said : 'Not saved. Try again in a moment.'; return; }
+          h.dataset.name = name; box.hidden = true; nm.hidden = true; said.textContent = '';
+          h.tabIndex = -1; h.focus();
+          kit.paintSky(); h.classList.remove('arrive'); void h.offsetWidth; h.classList.add('arrive');
+        });
+      };
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); go(); } if (e.key === 'Escape') { box.hidden = true; nm.hidden = false; nm.focus(); } });
+      if (save) save.addEventListener('click', go);
+    }
+  }
+
+  /* What's new, once: Home's server is told it was seen as the page goes, so the next build leaves it out. */
+  if ($('[data-block=whats-new]')) addEventListener('pagehide', () => {
+    try { fetch('/api/whats-new', { method: 'POST', credentials: 'same-origin', cache: 'no-store', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => {}); } catch (e) {}
+  }, { once: true });
   const web = $('.web'); if (!web) return;
   const NEW = web.classList.contains('new');
   const band = $('.gband', web), grid = $('.grid', web), add = $('.add', web), gbar = $('.gbar', web), gl5 = $('.gl5', web);

@@ -52,7 +52,7 @@ sys.path.insert(0, HERE)
 
 from hydralib import claude as cl  # noqa: E402
 from hydralib import config as cfg  # noqa: E402
-from hydralib import applog, files, health, jobs, pages, registry, settings, shop, space, tools  # noqa: E402
+from hydralib import applog, files, health, jobs, pages, registry, settings, shop, space, tools, you  # noqa: E402
 from hydralib import release as builds  # noqa: E402  (Setup takes a release folder of that name)
 
 PLUGIN = os.path.dirname(HERE)  # <release>/hydra/<version>
@@ -81,9 +81,13 @@ CHAT_STEPS = ("Adding your pages…", "Starting them…")
 CHAT_DONE = "Hydra-OS is set up."
 # what Claude does next, carried by setup's own last lines: the plugin's skills load only in a chat in the Hydra-OS
 # folder, so the chat that runs setup has only these. Claude tells the person in its own words
-CHAT_NEXT = ("Next, tell them that last, you'll move this chat into their Hydra-OS folder, so their pages and you stay "
-             "together. Then move this chat into %s with the Claude app's own folder change, which asks them first, "
-             "open Home in the Browser pane from %s, and tell them Home is open beside the chat.")
+CHAT_NEXT = ("Next, tell them you'll move this chat into their Hydra-OS folder, so their pages and you stay together. "
+             "Then move this chat into %s with the Claude app's own folder change, which asks them first, and open "
+             "Home in the Browser pane from %s. Then, in a few short sentences, walk them through it: Home, beside "
+             "the chat, shows their day and their goals, with each of their pages a tap away; they talk to you here, "
+             "in their own words, to ask about or change anything; and it grows with them, as they ask you for new "
+             "plots and new data and add pages from the Shop. Then ask: \"What's one thing you're working toward?\" "
+             "Their answer is their first goal.")
 CHAT_FAILED = ("Tell them that this step didn't finish and that nothing was changed, then offer to try again from "
                "here. On their yes, run this same hydra-setup again.")
 CHAT_SAY_IT = ("Tell them that, in your own words. Once they've renamed it, offer to try again, and on their yes, run "
@@ -134,7 +138,7 @@ def free_port(first):
 
 class Setup:
     def __init__(self, root=None, jobs_on=False, port=None, release=None, env=None, home=None, load=jobs.load,
-                 python=None):
+                 python=None, python_from=None):
         self.env = dict(os.environ if env is None else env)
         self.env.pop("ANTHROPIC_API_KEY", None)
         self.root = os.path.abspath(os.path.expanduser(root or cfg.DEFAULT_ROOT))
@@ -150,8 +154,9 @@ class Setup:
         self.existing = None
         self.build = builds.own(PLUGIN)  # this release's own build, from its build.json, when it has one
         self.updating = False  # a folder an older build set up
-        # the Python Hydra-OS runs on: the one given (hydra-setup gives the Mac's own /usr/bin/python3, a path that
-        # stays put), else the one running setup
+        # the Python Hydra-OS runs on: its own, from hydra-setup's checked download (python_from), kept in
+        # <root>/hydra/python/ by python_step; else the one given; else the one running setup
+        self.python_from = os.path.abspath(python_from) if python_from else None
         self.python = os.path.abspath(python) if python else sys.executable
         self.loaded = []  # every launch agent this setup started, so a stop takes them back
         loader = load
@@ -176,12 +181,14 @@ class Setup:
             fresh = self.existing is None
             if fresh and not self.ours():
                 raise Stop(NOT_OURS)
+            self.python_step()
             self.release = self.given_release or self.assemble()
             self.claude_step()
             if fresh:
                 self.root_step()
             else:
                 self.resume_config()
+            you.fill_from_account(self.root, self.env)  # Home's greeting, from the Mac account's own full name
             print(CHAT_STEPS[0], flush=True)
             if fresh:
                 self.store_step()
@@ -197,6 +204,7 @@ class Setup:
                 settings.mark_whats_new(self.root, str((registry.app(self.root, registry.MAIN) or {}).get("version")
                                                        or "0"))
             self.leave_public_list()
+            self.python_tidy()
         except Stop as e:
             if fresh:
                 self.undo()
@@ -289,11 +297,45 @@ class Setup:
         return raw
 
     def resume_config(self):
-        """A folder already set up: its config.json, with the shop's address when it names none."""
+        """A folder already set up: its config.json, with the shop's address when it names none, and the Python
+        hydra-setup just brought, kept here by python_step, in place of the one it ran on."""
         self.raw = self.existing
-        if self.shop_setting():
+        moved = bool(self.python_from) and self.raw.get("python") != self.python
+        if moved:
+            self.raw = dict(self.raw, python=self.python)
+        if self.shop_setting() or moved:
             cfg.write(self.root, self.raw)
         self.config = cfg.load(self.root)
+        if moved:
+            self.tools_step()
+
+    def python_step(self):
+        """Its own Python, from hydra-setup's checked download, kept in <root>/hydra/python/<its name>: copied whole,
+        its links kept, so setup, the helpers and every hook run on the copy there, never the Mac's own python3. A
+        copy of that name already there is taken away first, so a half-made one never stays."""
+        if not self.python_from:
+            return
+        if not os.path.isfile(os.path.join(self.python_from, "bin", "python3")):
+            raise Stop("Hydra-OS's Python isn't where setup put it. Nothing was set up.")
+        dest = os.path.join(self.root, "hydra", "python", os.path.basename(self.python_from))
+        try:
+            files.folder(os.path.dirname(dest))
+            if os.path.lexists(dest):
+                shutil.rmtree(dest)
+            shutil.copytree(self.python_from, dest, symlinks=True)
+        except OSError:
+            raise Stop("Hydra-OS couldn't keep its Python in %s." % tilde(self.root))
+        self.python = os.path.join(dest, "bin", "python3")
+
+    def python_tidy(self):
+        """Once setup is done on its own Python, any other one an earlier setup kept in <root>/hydra/python/ goes."""
+        kept = os.path.join(self.root, "hydra", "python")
+        mine = os.path.dirname(os.path.dirname(self.python))
+        if os.path.dirname(mine) != kept or not os.path.isdir(kept):
+            return
+        for name in os.listdir(kept):
+            if os.path.join(kept, name) != mine:
+                shutil.rmtree(os.path.join(kept, name), ignore_errors=True)
 
     def resume_step(self):
         """A folder already set up, picked up where it was left. config.json, yours/, every page's folder, the store and
@@ -449,7 +491,8 @@ class Setup:
         else:
             self.server = subprocess.Popen(
                 [self.config["python"], "-B", "-s", os.path.join(self.main_root, "scripts", "server.py"), "--root", self.root],
-                cwd=self.root, env=cfg.run_env(self.config), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                cwd=self.root, env=dict(cfg.run_env(self.config), **cfg.test_switches(self.env)),
+                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL, close_fds=True, start_new_session=True)
             files.write_json(os.path.join(self.root, "hydra", "server.pid"),  # so the last chat's end can stop it
                              {"pid": self.server.pid, "at": datetime.datetime.now().astimezone().replace(microsecond=0).isoformat()})
@@ -586,7 +629,7 @@ class Setup:
         """Whether a folder that isn't set up is free to set up: missing, or holding only what the plugin's own install
         at local scope made there (.claude/settings.local.json, Claude Code's own) and what an earlier setup that
         stopped left. A folder of the person's own of that name is never mixed with."""
-        for sub, allowed in (("", {"hydra", ".claude", ".DS_Store"}), ("hydra", {".setup", ".DS_Store"}),
+        for sub, allowed in (("", {"hydra", ".claude", ".DS_Store"}), ("hydra", {".setup", "python", ".DS_Store"}),
                              (".claude", {LOCAL_SETTINGS, ".DS_Store"})):
             try:
                 if not set(os.listdir(os.path.join(self.root, sub))) <= allowed:
@@ -740,11 +783,12 @@ def main(argv=None):
     ap.add_argument("--jobs", action="store_true", help="start the helpers at login, after the person's yes")
     ap.add_argument("--port", type=int, help="Home's port (default: the first free one from 8792 up)")
     ap.add_argument("--python", help="the Python Hydra-OS runs on (default: the one running setup)")
+    ap.add_argument("--python-from", help="its own Python, as hydra-setup checked and unpacked it, to keep in <root>")
     args = ap.parse_args(argv)
     load = jobs.load
     if os.environ.get("HYDRA_TEST_LAUNCHCTL"):  # tests only: launchctl's stand-in
         load = jobs.test_load(os.environ["HYDRA_TEST_LAUNCHCTL"], os.path.expanduser("~"))
-    return Setup(args.root, args.jobs, args.port, python=args.python, load=load).run()
+    return Setup(args.root, args.jobs, args.port, python=args.python, python_from=args.python_from, load=load).run()
 
 
 if __name__ == "__main__":

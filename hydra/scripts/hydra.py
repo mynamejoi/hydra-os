@@ -7,7 +7,7 @@ and exits 0 when it did what it said, 2 when it refused (with why), and 1 when H
   hydra sources remove <page> <source> [--account <word>]
   hydra sources list
   hydra act <page> <action> [--<field>=<value> ...] [--yes [--token=<t>]]
-  hydra goals <verb> [--<field>=<value> ...] [--yes [--token=<t>]]          (hydra act goals <verb>)
+  hydra goals <verb> [--<field>=<value> ...] [--yes]          (hydra act goals <verb>)
   hydra panel point <page> <block> [<item> ...] [--say "<words>"]
   hydra panel clear
   hydra panel done <request-id>

@@ -46,9 +46,10 @@ esc = kit.esc
 OWN = ("home.js", "shop.js", "help.js")  # Home's own file, copied beside the page so /home/<file> serves it
 BAND = ("goals",)                 # Goals is the band across the top, never a tile
 ENGINES = ("research", "dreams")  # they read across every app: a row each under the apps, never a tile
-ADD = ("Add a widget", "Tell Claude what you'd like here.")  # the grid's last tile; this build has no store
+ADD = ("Add a widget", "Your pages' other findings can go here, once they've run.")  # the grid's last tile; this build has no store
 # While Wellbeing offers a widget that isn't on Home, the tile names its findings.
-ADD_OFFERS = "Sleep, heart rate, lights out or meals. Tell Claude which, in the chat beside this page."
+ADD_OFFERS = "Choose one to add:"  # then each offer still off Home, its own button
+ADD_ALL = "Every finding your pages offer is on Home."
 OFFER = re.compile(r"[a-z0-9-]{1,24}")  # an offer's id
 QUOTE = {"text": "First say to yourself what you would be; and then do what you have to do.", "by": "Epictetus"}  # lines.json unread
 LINES = os.path.join(HERE, "lines.json")  # about ninety short public-domain lines, one a day by the date
@@ -59,18 +60,13 @@ TIPS = (
     {"id": "home-goals", "block": "goals", "sel": ".gband li", "text": "Your goal lives here. Open it to see how it's going.", "when": "data"},
     {"id": "home-asks", "block": "questions", "sel": "[data-block=questions] .qs > *", "text": "Answer here. It saves on the page, no chat needed.", "when": "data"},
     {"id": "home-review", "block": "", "sel": ".web .sg", "text": "This came from this morning's review.", "when": "after-review"},
+    {"id": "home-grow", "block": "", "sel": ".web .card", "text": "Want a new chart or new data on any page? Ask Claude, in the chat beside this page.", "when": "day-2"},
+    {"id": "home-shop", "block": "", "sel": ".rail a.shop", "text": "The Shop has more pages to add.", "when": "day-3"},
     {"id": "home-sky", "block": "", "sel": ".head .orb.sun, .head .orb.moon", "text": "Your sky can follow your sun. Tell Claude your city.", "when": "day-2"},
-    {"id": "home-widget", "block": "", "sel": ".web .add", "text": "Want something else here? Tell Claude.", "when": "day-3"},
+    {"id": "home-widget", "block": "", "sel": ".web .add", "text": "More of your pages' findings can go here.", "when": "day-3"},
 )
 
-# The first run's sheets, one at a time: the welcome sheet while it
-# isn't seen and no name is kept, else What's new once after an update. The name saves on the page (POST /api/name).
-WELCOME = ("Welcome to Hydra-OS", (
-    ("home", "Your day on one page", "Home shows your goals and what matters today.", None),
-    ("message", "Set up by talking", "Tell Claude what you want, in the chat beside this page.", None),
-    ("file", "Kept on this Mac", "Your records are files in your Hydra-OS folder.", ("/privacy/", "How privacy works")),
-))
-NAME_FIELD = {"label": "What should we call you?", "placeholder": "First name", "under": "Optional"}
+# What's new, once after an update: each of its version's lines by its title.
 TITLED = re.compile(r"\*\*(.+?)\*\*\s*(.*)$")  # a CHANGELOG line's "**Title.**"
 
 DAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
@@ -100,7 +96,12 @@ def offer(root, apps, name):
 def drop_only(entry):
     """True when every way in the app's column.json declares is a file dropped on its own page,
     as Health's export is. Its tile then opens that page at the drop place, since Claude has nothing to connect."""
-    return kit.file_only(kit.read_json(os.path.join(entry["root"], "column.json"), {}) if isinstance(entry.get("root"), str) else {})
+    return kit.file_only(column_of(entry))
+
+
+def column_of(entry):
+    """An installed app's column.json, from its registry entry's root, or {}."""
+    return kit.read_json(os.path.join(entry["root"], "column.json"), {}) if isinstance(entry, dict) and isinstance(entry.get("root"), str) else {}
 
 
 # While a dropped file waits to be read, on every page's tile and Wellbeing's page alike:
@@ -159,14 +160,17 @@ def ran_today(root, now):
 
 def tips(model):
     """Home's tips still to show today: not seen (yours/settings.json's "tips"), and due (kit.tip_due). The sky's waits
-    while their city is set, and the morning review's until hydra think has run today (ran_today)."""
+    while their city is set, the morning review's until hydra think has run today (ran_today), the Shop's while every
+    page it lists is in the rail, and the widget's while no page offers one that isn't on Home. The growth path comes
+    first after day one: any page grows by asking Claude, then the Shop has more pages."""
     root = model.get("root")
     if not root:
         return []
     seen, since = kit.settings_of(root)["tips"].get("home", []), kit.installed_on(root)
     reviewed = ran_today(root, model["now"])
     return [t for t in TIPS if t["id"] not in seen and kit.tip_due(t, model["now"].date(), since, reviewed=reviewed)
-            and not (t["id"] == "home-sky" and model["place"])]
+            and not (t["id"] == "home-sky" and model["place"]) and not (t["id"] == "home-widget" and not model.get("offers_left"))
+            and not (t["id"] == "home-shop" and not set(model.get("sold") or ()) - set(model["apps"]))]
 
 
 def lights_out(root, apps, today):
@@ -248,6 +252,7 @@ def read(root, now=None):
             tiles.append({"id": app_id, "title": entry.get("title") or app_id.capitalize(), "accent": entry.get("accent"), "icon": entry.get("icon"),
                           "about": about, "home": home, "engine": app_id in ENGINES, "schedule": entry.get("schedule") if isinstance(entry.get("schedule"), dict) else {},
                           "feeds": [r["id"] for r in goals["goals"] if r["app"] == app_id], "drop": drop_only(entry),
+                          "setup": kit.needs_setup(column_of(entry)),  # a connector to connect or a file to give
                           # a stale or failed tile shows how old it is, never "Reading your file…": its run has
                           # stopped, so a file can look unread for good
                           "reading": unread(root, entry, apps, home) and not stale and (home or {}).get("state") not in ("stale", "failed"),
@@ -257,10 +262,9 @@ def read(root, now=None):
         for q in (home or {}).get("questions") or []:
             if isinstance(q, dict) and q.get("id") and q.get("text"):
                 q = kit.fill_goal(q, texts)  # "Why does '{goal}' matter to you?", in the goal's own words from goals.json
-                if q and app_id in BAND and kit.offer_app(q):  # Goals' one offer goes under its goal in the band
-                    if q["goal"] in hand:
-                        offers.setdefault(q["goal"], q)
-                elif q:
+                if q and app_id in BAND and kit.offer_app(q):  # an offer of Goals' older builds: Goals offers nothing now
+                    continue
+                if q:
                     asked.append((app_id, entry.get("title") or app_id.capitalize(), entry.get("accent"), q))
     asked = [a for a in asked if not isinstance(a[3].get("answer"), dict)] + [a for a in asked if isinstance(a[3].get("answer"), dict)]
     you = kit.read_json(os.path.join(root, "hydra", "home", "you.json"), {})
@@ -277,9 +281,9 @@ def read(root, now=None):
         "now": now, "today": today, "apps": apps, "settings": settings, "goals": goals, "measured": bool(measured),
         "review_tile": quiet[0] if quiet else None, "offers": offers,
         "tiles": [t for t in tiles if not t["engine"] and not t["hidden"]], "engines": [t for t in tiles if t["engine"]], "asked": asked[:3],
-        "grid": grid(tiles, layout), "offers_left": offers_left(tiles, layout),
-        "name": name.strip().split(" ")[0][:24], "out": lights_out(root, apps, today),
-        "welcome": not settings["welcome"] and not name.strip(),  # the welcome sheet's due
+        "grid": grid(tiles, layout), "offers_left": offers_left(tiles, layout), "offers_any": any(t["offers"] for t in tiles),
+        "name": name.strip().split(" ")[0][:24], "name_from": you.get("name_from") if isinstance(you, dict) else None,
+        "out": lights_out(root, apps, today),
         "helpers": helpers_of(root),
         "sold": {p.get("id") for p in kit.shop_doc(root)["pages"] if isinstance(p, dict)},  # the Shop's pages, which a tile sets up
         "quote": day_quote(root, today, goals),
@@ -311,14 +315,15 @@ def greeting(model):
 def first_step(model):
     """While nothing has run, the one thing to do first, in plain words. With no goal,
     nothing here: the band's line points to Claude, in the chat. Then whatever the app that will measure a goal needs,
-    with Claude for its way in unless that's a file dropped on its page; then nothing, since the app's own tile says
-    when it fills in."""
+    by its tile's own button below (Set up for a page from the Shop); then nothing, since the app's own tile says when
+    it fills in."""
     if not model["new"] or not model["goals"]["goals"]:
         return ""
     for t in model["tiles"]:
         needs = (t["about"].get("needs") or "").strip()
         if needs and t["feeds"] and t["id"] not in model["sourced"] and not t["reading"]:
-            return "Next: %s%s below%s" % (needs[:1].lower(), needs[1:], "." if t["drop"] else ", or tell Claude what you use.")
+            what = "set up %s" % t["title"] if t["id"] in model.get("sold", ()) and t["setup"] else needs[:1].lower() + needs[1:]
+            return "Next: %s below." % what  # its tile has the button
     return ""
 
 
@@ -338,13 +343,25 @@ def date_more(model):
     return '<span data-more%s>%s</span>' % (attrs, esc(" \u00b7 Lights out %s" % minutes_said(out)) if out else "")
 
 
+def not_you(model):
+    """Not you?: while the name Home greets with is the Mac account's first name, as setup kept it (you.json's
+    "name_from": "account"), a small button beside the greeting lets them change it on the page (POST /api/name, in
+    home.js), its field opening under them; an empty one means no name. Once the name is theirs, it goes.
+    (button, field), or ("", "")."""
+    if not model["name"] or model.get("name_from") != "account":
+        return "", ""
+    return ('<button type="button" class="nm" data-rename>Not you?</button>',
+            '<div class="nmf" hidden>%s<p class="said" role="status" aria-live="polite"></p></div>' % kit.field(
+                "nm-f", "What should we call you?", "First name", maxlength=60, button="Save"))
+
+
 def head(model):
     today, quote = model["today"], model["quote"]
     cite = "<cite>%s</cite>" % esc(quote["by"]) if isinstance(quote.get("by"), str) and quote["by"].strip() else ""
     return ('<header class="head"><i class="orb sun" aria-hidden="true"></i><i class="orb moon" aria-hidden="true"></i><div class="top"><div>'
-            '<h1 data-greet data-name="%s" data-out="%s">%s</h1><p class="date">%s, %s %d%s</p>%s</div>'
+            '<div class="hi"><h1 data-greet data-name="%s" data-out="%s">%s</h1>%s</div>%s<p class="date">%s, %s %d%s</p>%s</div>'
             '<blockquote class="quote"><p>“%s”</p>%s</blockquote></div></header>') % (
-        esc(model["name"]), model["out"] or "", esc(greeting(model)), DAYS[today.weekday()], MONTHS[today.month - 1], today.day,
+        esc(model["name"]), model["out"] or "", esc(greeting(model)), *not_you(model), DAYS[today.weekday()], MONTHS[today.month - 1], today.day,
         date_more(model),  # lights out, and sunset once their place is set: home.js, from the kit's sun
         '<p class="first">%s</p>' % esc(first_step(model)) if first_step(model) else "", esc(quote["text"].strip()), cite)
 
@@ -361,21 +378,10 @@ def shown_goals(model):
 MORE_GOALS = kit.SOMETHING_ELSE
 
 
-def band_offer(model, reading):
-    """Goals' one offer for this goal, under it in the band: "Finance
-    can count 'Save $5,000 for a trip' now.", with Count it and Not this one, in the arriving page's colour. A pick saves
-    through Goals' answer, "Saved." with Undo, as every question does."""
-    q = model.get("offers", {}).get(reading["id"])
-    if not q:
-        return ""
-    page_id = kit.offer_app(q)
-    return kit.question(q, "goals", accent=(model["apps"].get(page_id) or {}).get("accent"), tint_app=page_id, saved="Saved.")
-
-
 def band(model):
     """Toward your goals: every goal in hand, read as Goals reads them. Until one is measured, each row says who will
-    measure it, over the line that points a new goal to Claude, in the chat. With no goal at all, it's that line, with
-    a few goals in plain words."""
+    measure it, over the line that invites the next goal, as under goals in hand everywhere. With no goal at all, it's
+    the line that points a first goal to Claude, in the chat, with a few goals in plain words."""
     readings = model["goals"]["goals"]
     title = '<a href="/goals/" target="_top">Goals</a>' if model["has_goals_app"] else "Goals"
     rows, tally = shown_goals(model)  # the tally shows only from three goals
@@ -384,14 +390,14 @@ def band(model):
         n, few = len(readings), len(readings) <= 2
         if few:  # one or two: each row spans the tile, and a goal that's behind says why, from its measuring app
             body = '<ul class="gl5 few" style="--n:1;--n3:1;--n2:1">%s</ul><p class="gq">%s</p>' % (
-                "".join(kit.goal_item(r, home=True, under=band_offer(model, r)) for r in rows), esc(MORE_GOALS))
+                "".join(kit.goal_item(r, home=True) for r in rows), esc(MORE_GOALS))
         else:
             cols = "--n:%d;--n3:%d;--n2:%d" % (max(2, min(5, n)), max(2, min(3, n)), 2)
-            body = '<ul class="gl5" style="%s">%s</ul>' % (cols, "".join(kit.goal_item(r, home=True, under=band_offer(model, r)) for r in readings))
+            body = '<ul class="gl5" style="%s">%s</ul>' % (cols, "".join(kit.goal_item(r, home=True) for r in readings))
     else:
-        rows = "".join('<li%s><span class="gn">%s</span>%s%s%s</li>' % (kit._attrs(*kit._goal_style(r)), esc(r["text"]), kit.goal_bar(r), kit.goal_status(r),
-                                                                       band_offer(model, r)) for r in readings)
-        body = '<div class="g0"><ul class="g0l">%s</ul>%s</div>' % (rows, kit.goal_field(first=not readings, examples=not readings))
+        rows = "".join('<li%s><span class="gn">%s</span>%s%s</li>' % (kit._attrs(*kit._goal_style(r)), esc(r["text"]), kit.goal_bar(r), kit.goal_status(r))
+                       for r in readings)
+        body = '<div class="g0"><ul class="g0l">%s</ul>%s</div>' % (rows, kit._something_else() if readings else kit.goal_field(first=True, examples=True))
     return '<article class="t gband" data-block="goals" aria-labelledby="h-goals">%s%s</article>' % (top, body)
 
 
@@ -434,9 +440,11 @@ def grid(tiles, layout):
 
 
 def offers_left(tiles, layout):
-    """True while Wellbeing offers a widget that isn't on Home yet, so Add a widget names its findings."""
+    """The offers not on Home yet, in the tiles' order: each {"id": "<app>.<offer>", "title"}, so Add a widget makes
+    each its own button that adds it on the page."""
     added = set(added_ids(layout))
-    return any("%s.%s" % (t["id"], o["id"]) not in added for t in tiles if t["id"] == "health" for o in t["offers"])
+    return [{"id": "%s.%s" % (t["id"], o["id"]), "title": o["title"].strip()} for t in tiles for o in t["offers"]
+            if "%s.%s" % (t["id"], o["id"]) not in added]
 
 
 def widget(w, model):
@@ -475,7 +483,7 @@ def tile(t, model):
         body = '<header class="ch"><h2>%s</h2></header><p class="say0">%s</p>%s' % (name, esc(READING if t["reading"] else kit.capital(about.get("line") or "")), kit.empty_marks())
         if t["reading"]:  # the file is in: nothing to do but wait for its read
             pass
-        elif t["id"] in model.get("sold", ()):  # a page from the Shop: Set up is its one way in, as on its own page
+        elif t["id"] in model.get("sold", ()) and t["setup"]:  # a page from the Shop: Set up is its one way in, as on its own page
             body += '<p class="act0">%s%s</p>' % (kit.connect(t["id"], "Set up %s" % t["title"], kind="setup"),
                                                   '<span class="via">%s</span>' % esc(via) if via else "")
         elif needs and t["drop"]:  # its one way in is a file: the tap opens its page at the drop place, and files nothing
@@ -509,18 +517,19 @@ def tile(t, model):
         body += '<p class="sg">%s<a href="%s" target="_top">See why on %s</a></p>' % (
             esc(kit.capital(suggest["text"].strip())), esc(kit.page_link(suggest.get("link")) or "/%s/" % t["id"]), esc(t["title"]))
     elif t["id"] == model.get("review_tile"):  # where its suggestion would be, while they said no to the morning review
-        body += '<p class="sg nrv">%s</p>' % esc(kit.REVIEW_OFF)
+        body += '<p class="sg nrv">%s %s</p>' % (esc(kit.REVIEW_OFF), kit.REVIEW_ON)
     return "<article%s>%s</article>" % (attrs, body)
 
 
 def add_tile(model):
-    """Add a widget, the grid's last tile, in the target's shape. This build has no
-    store. While Wellbeing offers a widget that isn't on Home, the tile names its findings, and Claude adds the one they
-    pick by `hydra widget add` after their yes. A tap hands Claude a
-    request that names no app yet, Claude asks what they'd like there, and the kit's
-    note says to go to Claude."""
-    return ('<button type="button" class="t add" data-connect data-kind="add-app" data-app="">'
-            '<span class="plus" aria-hidden="true">%s</span><b>%s</b><span class="how">%s</span></button>') % (kit.icon("plus"), esc(ADD[0]), esc(ADD_OFFERS if model["offers_left"] else ADD[1]))
+    """Add a widget, the grid's last tile, in the target's shape. Each of the pages' offers not on Home yet is its own
+    button, which adds it on the page (POST /api/widget/add), with no turn in the chat. With none, the tile says where
+    they'll come from, or that every one is on Home already."""
+    offers = model["offers_left"]
+    how = ('<span class="how">%s</span><span class="offs">%s</span>' % (esc(ADD_OFFERS), "".join(
+        '<button type="button" class="alt" data-do="widget/add" data-fields=\'{"id": "%s"}\' data-then="hide">%s</button>' % (esc(o["id"]), esc(o["title"]))
+        for o in offers)) if offers else '<span class="how">%s</span>' % esc(ADD_ALL if model.get("offers_any") else ADD[1]))
+    return '<div class="t add" data-block="add"><span class="plus" aria-hidden="true">%s</span><b>%s</b>%s</div>' % (kit.icon("plus"), esc(ADD[0]), how)
 
 
 def engine(t, model):
@@ -613,36 +622,38 @@ HELP = (
      "Tell Claude what you're working toward, in the chat beside this page. Goals keeps it, and the page that can count it does."),
     ("current", "How do my pages stay up to date?",
      "Each page updates every morning by itself. Pages that read your accounts do it in the morning review, which runs in your "
-     "Claude app once you've turned it on. The more pages you have, the more of your plan it uses. Others read a file you drop on them."),
+     "Claude app each morning. The more pages you have, the more of your plan it uses. Others read a file you drop on them."),
     ("repair", "A page says it hasn't updated. What do I do?",
-     "Choose Repair above, and Claude finds what's wrong and says what it changed."),
+     "Choose Repair above. Hydra-OS checks itself, fixes what it can and says what it changed."),
     ("shop", "How do I add a page from the Shop?",
      "Open the Shop at the foot of the rail. Choose Get, or paste the key you were given at the Shop's foot, and the page joins "
-     "your rail. Then choose Set up on its card, and Claude walks you through it."),
+     "your rail. Then say go to Claude, in the chat beside this page, and it sets the page up with you."),
     ("update", "How do I update Hydra-OS?",
-     "When a newer Hydra-OS is ready, Home says so at the top. Choose Update there, and Claude says what changes and updates "
-     "after your yes. Your goals, your pages' records and your own changes stay."),
-    ("remove", "How do I remove Hydra-OS?", "Choose Remove Hydra-OS\u2026 at the foot of this page. Claude asks before anything goes."),
+     "When a newer Hydra-OS is ready, Home says so at the top. Choose Update there, and Hydra-OS updates itself, then shows "
+     "what's new. Your goals, your pages' records and your own changes stay."),
+    ("remove", "How do I remove Hydra-OS?", "Choose Remove Hydra-OS\u2026 at the foot of this page. It asks you first, right there."),
     ("records", "Where are my records?", "As files on your Mac, in the Hydra-OS folder in your home folder. There's no server of ours."),
     ("leaves", "What leaves my Mac?",
      "What Claude reads for each page, under your own account; the Shop's daily list, which sends nothing about you; and Research's "
      "searches, in general words only. The Privacy page says it all."),
 )
 REPORT = ("Something's wrong. Who do I tell?", "Copy a report", "It shows how Hydra-OS is running, never your records, and you see all of it before you copy it.")
+REMOVE_ASK = ("Remove Hydra-OS? Your Hydra-OS folder goes to the Trash, so you can take it back. "
+              "Your Claude chats stay in Claude.")  # asked on the page, in Remove's place
 HELP_FILE = os.path.join(HERE, "help.json")  # the contact address, once one is set
 # Help's first line and its rows.
 HELP_LINE = "Ask Claude anything in the chat beside this page."
 # Hydra-OS's two background helpers, Home's server and the tick, as config.json's "helpers" says: the line under Help's row
 HELPERS = {"on": "Home and the daily reads start when you log in.", "off": "Home and the daily reads start with a Hydra-OS chat."}
 HELP_ROWS = {"review": "Each morning Claude reads your pages and puts the day's moves on Home. It uses some of your Claude plan each morning.",  # its plan use
-             "repair": "For a page that hasn't updated. Claude finds what's wrong and says what it changed.",
+             "repair": "For a page that hasn't updated. Hydra-OS checks itself, fixes what it can and says what it changed.",
              "privacy": "What stays on your Mac, and what leaves it."}
 CONTACT = re.compile(r"[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+")
 
 
 # A newer Hydra-OS, and what's new after an update. An update goes through Claude.
 CHANGELOG = os.environ.get("HYDRA_TEST_CHANGELOG") or os.path.join(os.path.dirname(HERE), "CHANGELOG.md")  # the main plugin's: "## <version>", then its "- " lines; a test names a made-up one
-READY = "Hydra-OS %s is ready."  # then its Update button, which hands Claude the update
+READY = "Hydra-OS %s is ready."  # then its Update button, which updates on the page
 
 
 def installed(apps):
@@ -700,27 +711,21 @@ def just_installed(root, apps):
 
 
 def updates(model):
-    """The quiet line that says a newer Hydra-OS is ready, at the top of Home's grid. What's new is a sheet (sheet())."""
+    """The quiet lines atop Home's grid: a newer Hydra-OS ready, with Update, which updates on the page (POST
+    /api/update) and opens the new build once it's in; and What's new, once after an update, its version's first three
+    lines by their titles, gone after one visit (home.js tells Home's server it was seen as the page goes)."""
     out = ""
     if model.get("ready"):
-        out += ('<p class="t upd" data-block="update"><span>%s</span><button type="button" class="cta" data-connect data-kind="update" '
-                'data-app="">Update</button></p>\n') % esc(READY % kit.shown_version(model["ready"]))
-    return out
-
-
-def sheet(model):
-    """Home's one sheet, if any: the welcome sheet while it's due, else What's new once after an update,
-    its rows the version's first three lines, each "**Title.**" its row's title."""
-    if model.get("welcome"):
-        return kit.sheet_html("welcome", WELCOME[0], WELCOME[1], field=NAME_FIELD)
+        out += ('<p class="t upd" data-block="update"><span>%s</span><button type="button" class="cta" data-do="update">Update</button></p>\n'
+                % esc(READY % kit.shown_version(model["ready"])))
     if model.get("whats_new"):
         version, lines = model["whats_new"]
-        rows = []
+        said = []
         for line in lines[:3]:
             m = TITLED.match(line)
-            rows.append(("check", m.group(1).strip().rstrip(".").strip(), m.group(2).strip(), None) if m else ("check", "", line, None))
-        return kit.sheet_html("whats-new", "What's new in Hydra-OS %s" % kit.shown_version(version), rows, esc_go=True)
-    return ""
+            said.append((m.group(1).strip() if m else line.strip()).rstrip(".") + ".")
+        out += '<p class="t upd wn" data-block="whats-new">What\'s new in Hydra-OS %s: %s</p>\n' % (esc(kit.shown_version(version)), esc(" ".join(said)))
+    return out
 
 
 def helpers_of(root):
@@ -732,10 +737,9 @@ def helpers_of(root):
 
 
 def help_page(model):
-    """Help at /help/: its first line, then its rows:
-    the morning review, with Turn on while it's off; the background helpers, On with Turn off or Off with Turn on,
-    whose button hands Claude the request (Claude asks before it changes anything), and no row when config.json can't
-    say which; Copy a report, whose button shows the report's exact text before its
+    """Help at /help/: its first line, then its rows, each button done on the page:
+    the morning review, On with Turn off or Off with Turn on; the background helpers, the same, and no row when
+    config.json can't say which; Copy a report, whose button shows the report's exact text before its
     Copy (help.js); Repair; Privacy; and the contact address once help.json holds one. Then the plain answers under a
     quiet "Questions", each opening on a tap, so the first view stays clean; the two lines about Claude and Anthropic;
     the footer."""
@@ -748,15 +752,17 @@ def help_page(model):
     row = lambda name, said, end="", more="", ident="": '<li class="hr"%s><div><b>%s</b><p>%s</p></div>%s%s</li>' % (
         ' id="%s"' % ident if ident else "", esc(name), esc(said), end, more)
     rows = [row("Morning review: %s" % ("On." if on else "Off."), HELP_ROWS["review"],
-                "" if on else '<button type="button" class="cta" data-connect data-kind="review" data-app="">Turn on</button>')]
+                '<button type="button" class="cta" id="do-review" data-do="review" data-fields=\'{"on": %s}\' data-then="reload">Turn %s</button>'
+                % ("false" if on else "true", "off" if on else "on"))]
     if turn:
         rows.append(row("Background helpers: %s." % helpers.capitalize(), HELPERS[helpers],
-                        '<button type="button" class="cta" data-connect data-kind="helpers-%s" data-app="">Turn %s</button>' % (turn, turn)))
+                        '<button type="button" class="cta" id="do-helpers" data-do="helpers" data-fields=\'{"on": %s}\' data-then="reload">Turn %s</button>'
+                        % ("true" if turn == "on" else "false", turn)))
     rows += [row(button, line, '<button type="button" class="cta" id="rep-show">%s</button>' % esc(button),
                 '<div class="rep" id="rep" hidden><pre class="rept" id="rep-text" tabindex="0" aria-label="The report"></pre>'
                 '<p class="act0"><button type="button" class="cta" id="rep-copy">Copy</button></p></div>'
                 '<p class="said" id="rep-said" role="status" aria-live="polite"></p>', ident="report"),
-            row("Repair", HELP_ROWS["repair"], '<button type="button" class="cta" data-connect data-kind="repair" data-app="">Repair</button>'),
+            row("Repair", HELP_ROWS["repair"], '<button type="button" class="cta" data-do="repair" data-fields=\'{"app": ""}\'>Repair</button>'),
             row("Privacy", HELP_ROWS["privacy"], '<a class="cta" href="/privacy/" target="_top">Read it</a>')]
     if contact:  # no address drawn until one is set
         rows.append('<li class="hr"><div><b>Write to us</b><p>%s</p></div></li>' % esc(contact))
@@ -765,9 +771,10 @@ def help_page(model):
             '<p class="sub">%s</p></section>\n<main class="pg hp">\n'
             '<section class="t sec" data-block="help" aria-label="Help"><ul class="hrows">%s</ul></section>\n'
             '<section class="t sec" data-block="answers" aria-labelledby="h-questions"><h2 class="hq0" id="h-questions">Questions</h2>%s</section>\n'
-            '<p class="t rm"><button type="button" class="alt" data-connect data-kind="remove" data-app="">Remove Hydra-OS\u2026</button></p>\n'
+            '<p class="t rm"><button type="button" class="alt" data-do="remove" data-fields=\'{"confirm": true}\' data-yes="Remove" '
+            'data-question="%s">Remove Hydra-OS\u2026</button></p>\n'
             '<div class="t foot ai">%s</div>\n</main>\n%s') % (
-        esc(HELP_LINE), "".join(rows), items, "".join("<p>%s</p>" % esc(t) for t in kit.SHOP_AI), kit.footer(model["now"]))
+        esc(HELP_LINE), "".join(rows), items, esc(REMOVE_ASK), "".join("<p>%s</p>" % esc(t) for t in kit.SHOP_AI), kit.footer(model["now"]))
     return kit.document("help", "Help", body, accent=205, built_at=model["now"].isoformat(timespec="seconds"), run="by-hand",
                         as_of=model["now"].isoformat(timespec="seconds"), appearance=model["settings"]["appearance"], place=model["place"],
                         scripts=("/home/help.js",), rail=kit.rail(model["apps"], "help", None if model.get("root") is None else model["root"]))
@@ -825,7 +832,7 @@ def privacy_page(model):
         + sec("Your log", para("Hydra-OS keeps a log of what ran, in %s, with keys, passwords and email addresses taken out. It stays on "
                                "your Mac. \"Copy a report\" on the Help page shares only how Hydra-OS is running, never your records, and shows "
                                "you all of it before you copy it." % log))
-        + sec("Removing Hydra-OS", para("Tell Claude \"remove Hydra-OS\". %s" % remove)),
+        + sec("Removing Hydra-OS", para("Choose Remove Hydra-OS\u2026 at the foot of Help. %s" % remove)),
         "".join("<p>%s</p>" % esc(t) for t in kit.SHOP_AI), kit.footer(model["now"]))
     return kit.document("privacy", "Privacy", body, accent=205, built_at=model["now"].isoformat(timespec="seconds"), run="by-hand",
                         as_of=model["now"].isoformat(timespec="seconds"), appearance=model["settings"]["appearance"], place=model["place"],
@@ -835,7 +842,7 @@ def privacy_page(model):
 def home_page(model):
     built = model["now"].isoformat(timespec="seconds")
     body = "%s\n<main>\n%s%s\n%s\n</main>\n%s\n%s" % (head(model), updates(model), web(model), asks(model), kit.footer(model["now"]),
-                                              kit.tips_html("home", tips(model)) + sheet(model))
+                                              kit.tips_html("home", tips(model)))
     return kit.document("home", "Home", body, accent=205, built_at=built, run="by-hand", as_of=built, appearance=model["settings"]["appearance"],
                         contract="home/v3", scripts=("/home/home.js",), place=model["place"], rail=kit.rail(model["apps"], "home", model.get("root")))
 
@@ -893,7 +900,9 @@ def build(root, now=None):
     home = home_page(model)  # / shows Home itself, in the Claude app's Browser pane
     # the Shop, served at /shop/, from the catalog in force, with what was added from it
     head, cards = kit.shop_body(kit.catalog(model["apps"], root, every=True), model["goals"]["goals"], installed=model["apps"],
-                                have=kit.bought(root), foot=kit.shop_doc(root).get("foot"), pending=just_installed(root, model["apps"]))
+                                have=kit.bought(root), foot=kit.shop_doc(root).get("foot"),
+                                pending={a for a in just_installed(root, model["apps"])  # Set up, while its column can't say it has none
+                                         if a not in model["apps"] or kit.needs_setup(column_of(model["apps"][a]))})
     shop = kit.document("shop", "Shop", "%s\n<main class=\"pg\">\n%s\n</main>\n%s" % (head, cards, kit.footer(model["now"])), accent=205,
                         built_at=built, run="by-hand", as_of=built, appearance=model["settings"]["appearance"], place=model["place"],
                         scripts=("/home/shop.js",), rail=kit.rail(model["apps"], "shop", root))

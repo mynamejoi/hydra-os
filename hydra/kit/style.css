@@ -108,48 +108,18 @@ h1{font:var(--lt);letter-spacing:var(--lt-k)}
 .tipb::before{content:"";position:absolute;left:var(--ax,1.25rem);top:-.4375rem;width:.75rem;height:.75rem;rotate:45deg;background:var(--solid);
   border-left:1px solid var(--line);border-top:1px solid var(--line)}
 .tipb.up::before{top:auto;bottom:-.4375rem;border:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+/* A tip on a part of the rail sits beside it, over the page, its point to the left. */
+.tipb.side{position:fixed;z-index:31}
+.tipb.side::before{left:-.4375rem;top:var(--ay,1rem);border:0;border-left:1px solid var(--line);border-bottom:1px solid var(--line)}
 .tipx{position:absolute;right:0;top:0;display:grid;place-items:center;width:2.75rem;height:2.75rem;border:0;border-radius:999px;background:none;
   color:var(--ink2);font:600 1.125rem/1 var(--font);cursor:pointer}
 @media (hover:hover){.tipx:hover{color:var(--ink)}}
 .tipx:focus-visible{outline:2px solid var(--goals);outline-offset:-6px}
-/* A sheet: solid, 420 wide, centred over the page dimmed behind it; its title
-   28/34 semibold, row titles 15 semibold, row text 13 in the secondary ink, 24 inside, one primary button 44 tall. It
-   comes in with opacity and a scale from .98, 300 ms, no bounce, and goes faster; with reduced motion it only fades. */
-.sheet{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:1rem;overflow:auto}
-.sheet[hidden]{display:none}
-.shv{position:fixed;inset:0;background:rgba(8,12,22,.42);opacity:0;transition:opacity .2s ease}
-:root[data-theme=dark] .shv{background:rgba(0,0,0,.5)}
-.sh{position:relative;width:min(26.25rem,100%);padding:1.5rem;border-radius:1.25rem;background:var(--solid);color:var(--ink);
-  box-shadow:inset 0 1px 0 var(--gloss),0 30px 70px -24px rgba(0,0,0,.55);opacity:0;scale:.98;transition:opacity .2s ease,scale .2s ease}
-.sheet.on .shv{opacity:1;transition:opacity .3s cubic-bezier(.23,1,.32,1)}
-.sheet.on .sh{opacity:1;scale:1;transition:opacity .3s cubic-bezier(.23,1,.32,1),scale .3s cubic-bezier(.23,1,.32,1)}
-.sh h2{margin:.5rem 0 0;font:600 1.75rem/2.125rem var(--font);letter-spacing:.013em;text-align:center;text-wrap:balance}
-.shl{margin-top:.75rem;font:var(--bo);letter-spacing:var(--bo-k);text-align:center;text-wrap:pretty}
-.shr{display:grid;gap:1rem;margin:1.5rem 0 0;padding:0;list-style:none}
-.shr li{display:grid;grid-template-columns:2rem minmax(0,1fr);gap:.75rem;align-items:start}
-.shr .ic{width:1.75rem;height:1.75rem;color:var(--app,var(--goals))}
-.shr b{display:block;font:600 .9375rem/1.25rem var(--font)}
-.shr p{margin-top:.125rem;font:400 .8125rem/1.125rem var(--font);color:var(--ink2);text-wrap:pretty}
-.shr a{color:var(--app,var(--goals));font-weight:600;text-decoration:none}
-.shr a:focus-visible{outline:2px solid var(--goals);outline-offset:2px;border-radius:.25rem}
-.shf{margin-top:1.5rem}.shf label{display:block;font:600 .8125rem/1.125rem var(--font)}
-.shf input{display:block;width:100%;min-height:2.75rem;margin-top:.375rem;padding:0 .875rem;border:1px solid var(--line);border-radius:.75rem;background:var(--well);
-  font:var(--bo);color:var(--ink);caret-color:var(--goals)}
-.shf input::placeholder{color:var(--ink2)}.shf input:focus-visible{outline:2px solid var(--goals);outline-offset:1px}
-.sho{margin-top:.25rem;font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2)}
-.sh .said{margin-top:.75rem;text-align:center}.sh .said:empty{display:none}
-.shb{display:grid;gap:.25rem;margin-top:1.5rem}
-.shgo,.shno{min-height:2.75rem;border:0;border-radius:.75rem;font:600 .9375rem/1.25rem var(--font);cursor:pointer;transition:scale .12s ease}
-.shgo{background:var(--key);color:var(--keyink)}.shno{background:none;color:var(--ink2)}
-.shgo:active,.shno:active{scale:.97}.shgo:disabled{opacity:.6;cursor:default}
-.shgo:focus-visible,.shno:focus-visible{outline:2px solid var(--goals);outline-offset:2px}
-@media (hover:hover){.shno:hover{color:var(--ink)}}
-/* Home's greeting, arriving with the name as the welcome sheet goes: opacity and a scale from .98, 300 ms, or a fade. */
+/* Home's greeting, arriving with a name changed on the page: opacity and a scale from .98, 300 ms, or a fade. */
 .head h1.arrive{animation:arrive .3s cubic-bezier(.23,1,.32,1)}
 @keyframes arrive{from{opacity:0;scale:.98}}
 @keyframes arrive-fade{from{opacity:0}}
-@media (prefers-reduced-motion:reduce){.sh,.sheet.on .sh{scale:1;transition:opacity .2s linear}.sheet.on .shv{transition:opacity .2s linear}
-  .head h1.arrive{animation:arrive-fade .2s linear}.shgo:active,.shno:active{scale:1}}
+@media (prefers-reduced-motion:reduce){.head h1.arrive{animation:arrive-fade .2s linear}}
 .quote{font:var(--bo);letter-spacing:var(--bo-k);text-align:right;text-wrap:balance}
 .quote p{display:inline}
 .quote cite{margin-left:.4em;font:var(--ca);letter-spacing:var(--ca-k);white-space:nowrap}
@@ -469,6 +439,7 @@ a.cta{text-decoration:none}
 /* What to do first, in order, and a file's drop place: the app's line, one calm button, and one line that says how it went. */
 .steps{display:grid;gap:.25rem;max-width:32rem;margin:0;padding-left:1.25rem;list-style:decimal;text-align:left;text-wrap:pretty}
 .steps li::marker{color:var(--ink2);font-variant-numeric:tabular-nums}
+.steps:has(li.on) li{color:var(--ink2)}.steps li.on{color:var(--ink);font-weight:600}.steps li.on::marker{color:var(--ink)}
 .drop{display:grid;justify-items:center;gap:.5rem;width:min(100%,32rem);padding:1rem;border:1.5px dashed var(--rule);border-radius:.875rem;text-align:center;transition:border-color .15s ease,background .15s ease}
 .drop .dl{font:var(--hl);letter-spacing:var(--hl-k);text-wrap:balance}
 .drop.over{border-color:var(--c,var(--goals));background:color-mix(in srgb,var(--c,var(--goals)) 8%,transparent)}
@@ -776,7 +747,7 @@ ol.lst>.lr::before{content:counter(lr);grid-column:1;grid-row:1;font:var(--hl);l
 .tkey{display:flex;flex-wrap:wrap;gap:.25rem 1rem;margin-top:.5rem;font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2)}
 /* Help: plain answers at a reading width, the report shown whole before it's copied, and the two
    lines about Claude and Anthropic quiet under them. */
-.hp>section,.hp>.ai{max-width:46rem}.hq{margin-top:1.25rem;font:var(--ti);letter-spacing:var(--ti-k)}.hq:first-child{margin-top:0}
+.hp>section,.hp>.ai,.hp>.rm{max-width:46rem}.pg>.rm{grid-column:1/-1}.hq{margin-top:1.25rem;font:var(--ti);letter-spacing:var(--ti-k)}.hq:first-child{margin-top:0}
 .ha{margin-top:.25rem;text-wrap:pretty}.rep{margin-top:.75rem}
 .rept{max-height:20rem;overflow:auto;padding:.75rem;border:1px solid var(--line);border-radius:.75rem;background:var(--well);font:var(--ca);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
 .rept:focus-visible{outline:2px solid var(--ink);outline-offset:2px}.foot.ai{margin-top:var(--gap)}
@@ -787,7 +758,26 @@ section.shop .sc:not([data-state=in-rail]) .su{display:none}.sf .su{margin-top:0
 /* Help's foot: Remove Hydra-OS, a quiet row of its own. */
 .t.rm{margin-top:var(--gap);padding:.5rem 1.25rem}
 /* Repair, beside a line whose answer asks for it: on its own line under a line of text, in a row of buttons beside them. */
-.rpr{justify-self:start;align-self:start}p+.rpr,span+.rpr,div+.rpr{margin-top:.5rem}.t.wn{margin-top:0;margin-bottom:var(--gap)}
+.rpr{justify-self:start;align-self:start}p+.rpr,span+.rpr,div+.rpr{margin-top:.5rem}
+/* A button Hydra-OS carries out on the page: its answer under it, its confirm in its place, Ask Claude after. */
+.dsaid{display:block;margin-top:.5rem;font:var(--ca);letter-spacing:var(--ca-k);color:var(--ink2);text-wrap:pretty}.dsaid:empty{display:none}
+.dconf{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem}.dconf .dsaid{flex:1 1 100%;margin-top:0;color:var(--ink)}
+.ask0{justify-self:start;margin-top:.5rem}.hrows .hr>.dsaid,.hrows .hr>.dconf,.hrows .hr>.rpr,.hrows .hr>.ask0{grid-column:1/-1}
+.nrv .alt{margin-left:.25rem}
+/* Not you?: beside the greeting, small, in the sky's white, its hit area 44 tall; its field opens under them. */
+.hi{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:.75rem}
+.head .nm{position:relative;padding:0;border:0;background:none;color:inherit;font:var(--ca);letter-spacing:var(--ca-k);cursor:pointer;
+  text-decoration:underline;text-decoration-color:rgba(255,255,255,.6);text-underline-offset:3px}
+.head .nm::after{content:"";position:absolute;inset:-14px -8px}
+@media (hover:hover) and (pointer:fine){.head .nm:hover{text-decoration-color:currentColor}}
+.head .nm:focus-visible{outline:2px solid currentColor;outline-offset:3px;border-radius:4px}
+.nmf{display:grid;gap:.375rem;max-width:22rem;margin:.5rem 0}.nmf[hidden]{display:none}.nmf label{font:var(--ca);letter-spacing:var(--ca-k)}
+.nmf input{min-width:0;min-height:44px;padding:0 .875rem;border:1px solid var(--line);border-radius:.75rem;background:var(--well);color:var(--ink);text-shadow:none;text-overflow:ellipsis}.nmf input:focus-visible{outline:2px solid currentColor;outline-offset:1px}.nmf .said:empty{display:none}
+/* What's new, once, atop Home. */
+.t.upd.wn{display:block}
+/* Add a widget: a page's offers, each its own button, added on the page. */
+.t.add{cursor:default}.t.add .offs{display:flex;flex-wrap:wrap;justify-content:center;gap:.25rem .75rem;margin-top:.25rem}
+.t.wn{margin-top:0;margin-bottom:var(--gap)}
 .hl{margin:.25rem 0 0;padding-left:1.25rem;display:grid;gap:.25rem;list-style:disc}.hl li{text-wrap:pretty}.hl li::marker{color:var(--ink2)}.hl .hl{list-style:circle}.hp a[data-open]{text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
 /* Where this comes from, one list: a newer file's place sits under the list, with room above it. */
 .conn>.drop{margin-top:.75rem}

@@ -12,6 +12,11 @@ If a step fails, the folder stays where it is, and the line says what's left. Th
 morning review's scheduled task deleted with the Claude app's own tool, then "You can close this chat now."
 
   remove(config, yes=False, env=None, now=None, load=None)   the lines hydra remove hydra says
+  remove_page(config, page, env=None, now=None, home=None)   one page taken away, from its own page's Remove
+
+A page's own Remove, on the page, after the page's own question: the page out of Claude Code and the store
+(shop.take_out), its widgets, sources and open taps off Home, and its own folder moved into ~/.Trash under its title,
+so they can take it back. Every page can go but Hydra-OS's own (Home, Dreams) and Goals, which holds every goal.
 """
 import datetime
 import os
@@ -28,10 +33,40 @@ NEXT = ('Next, if the Claude app has a scheduled task named "Hydra-OS morning re
         'scheduled-task tool and say so in one line; with none, say nothing of it. Then say "You can close this chat '
         'now."')
 LEFT = "Hydra-OS couldn't be removed whole: %s. Your Hydra-OS folder is where it was."
+PAGE_DONE = "Removed. %s's records are in the Trash."
+PAGE_NOT = "That page can't be removed here."
+KEPT = ("goals",)  # Goals holds every goal, so it stays with Hydra-OS
 
 
 class Stop(Exception):
     """One plain line on why nothing more was removed."""
+
+
+def remove_page(config, page, env=None, now=None, home=None):
+    from . import panel, shop, sources, widgets
+    root = config["root"]
+    now = now or datetime.datetime.now().astimezone()
+    entry = registry.app(root, page)
+    if not entry or entry.get("kind") == "main" or page in KEPT:
+        raise Stop(PAGE_NOT)
+    title = str(entry.get("title") or page)
+    record = entry.get("record") or ""
+    shop.take_out(config, page, env, strict=True)
+    doc = widgets._doc(root)
+    items = widgets._list(doc)
+    keep = [a for a in items if a["id"].split(".", 1)[0] != page]
+    if len(keep) != len(items):
+        widgets._write(root, doc, keep)
+    for row in sources.for_app(root, page):
+        sources.remove(root, page, row.get("source", ""), row.get("account", ""))
+    for r in panel.open_requests(root, now):
+        if r.get("app") == page:
+            panel.done(root, r["id"], now)
+    mine = os.path.realpath(root)
+    if record and os.path.isdir(record) and os.path.dirname(os.path.realpath(record)) == mine:
+        os.rename(record, _trash(os.path.join(root, title), home or os.path.expanduser("~"), now))
+    applog.note("remove", "%s removed from its own page" % page)
+    return PAGE_DONE % title
 
 
 def _trash(root, home, now):

@@ -1,0 +1,321 @@
+{
+ "contract": "column/v1",
+ "id": "health",
+ "title": "Wellbeing",
+ "kind": "engine",
+ "what": "Sleep, heart rate and what's moving them, from your Apple Health export or a file of days",
+ "accent": 159,
+ "icon": "heart",
+ "home": {
+  "size": "large",
+  "line": "Sleep, heart rate and what's moving them.",
+  "needs": "Add your Health data",
+  "via": "About ten minutes with your iPhone."
+ },
+ "tips": [
+  {
+   "id": "health-drop",
+   "block": "today",
+   "at": "drop",
+   "text": "Drop your Health export here. Your sleep shows in a few minutes.",
+   "when": "first-visit"
+  }
+ ],
+ "shape": {
+  "name": "days",
+  "version": 1,
+  "fields": {
+   "day": "date",
+   "readiness": "number",
+   "readiness_name": "word",
+   "sleep_hours": "number",
+   "resting_heart": "number",
+   "lights_out": "word",
+   "woke": "word",
+   "sports": "text",
+   "weight": "number",
+   "hrv": "number"
+  }
+ },
+ "sources": [
+  {
+   "id": "upload",
+   "kind": "upload",
+   "name": "Apple Health",
+   "folder": "inbox/",
+   "accepts": [
+    "zip",
+    "xml",
+    "csv",
+    "json"
+   ],
+   "what": "your Apple Health export, or a file of days",
+   "suggested": false,
+   "source": "Apple Health",
+   "reads": "sleep, resting heart and workouts",
+   "filed": "Got it. Wellbeing is reading your export now."
+  }
+ ],
+ "offers": [
+  {
+   "name": "day",
+   "version": 1,
+   "file": "shared/day.json",
+   "what": "tonight's lights out and when you woke"
+  }
+ ],
+ "uses": [],
+ "schedule": {
+  "at": "07:40",
+  "days": "daily",
+  "run": [
+   "scripts/run.py",
+   "--trigger",
+   "schedule"
+  ],
+  "needs_claude": false
+ },
+ "think": {
+  "input": [
+   "scripts/think.py",
+   "--input"
+  ],
+  "save": [
+   "scripts/think.py",
+   "--save"
+  ]
+ },
+ "headless": [],
+ "servers_needed": [],
+ "signals_in": [],
+ "signals_out": [],
+ "doctor_lines": [],
+ "proofs": [],
+ "guard": null,
+ "owner_only": [],
+ "fresh_within": 26,
+ "actions": [
+  {
+   "name": "answer",
+   "script": [
+    "scripts/act.py",
+    "answer"
+   ],
+   "confirm": "undo",
+   "undo": "unanswer",
+   "writes": [
+    "answers.jsonl"
+   ],
+   "fields": {
+    "question": {
+     "kind": "id",
+     "list": [
+      "scripts/act.py",
+      "questions"
+     ]
+    },
+    "pick": {
+     "kind": "id",
+     "list": [
+      "scripts/act.py",
+      "picks"
+     ],
+     "of": "question",
+     "optional": true
+    },
+    "on": {
+     "kind": "choice",
+     "of": [
+      "yes",
+      "no"
+     ],
+     "optional": true
+    },
+    "words": {
+     "kind": "words",
+     "max": 120,
+     "optional": true
+    }
+   }
+  },
+  {
+   "name": "unanswer",
+   "script": [
+    "scripts/act.py",
+    "unanswer"
+   ],
+   "confirm": "once",
+   "writes": [
+    "answers.jsonl"
+   ],
+   "fields": {
+    "question": {
+     "kind": "id",
+     "list": [
+      "scripts/act.py",
+      "questions"
+     ]
+    },
+    "pick": {
+     "kind": "id",
+     "list": [
+      "scripts/act.py",
+      "picks"
+     ],
+     "of": "question",
+     "optional": true
+    }
+   }
+  },
+  {
+   "name": "log-meal",
+   "script": [
+    "scripts/act.py",
+    "log-meal"
+   ],
+   "confirm": "undo",
+   "undo": "unlog-meal",
+   "writes": [
+    "store/meals.jsonl"
+   ],
+   "fields": {
+    "words": {
+     "kind": "words",
+     "max": 120
+    }
+   }
+  },
+  {
+   "name": "unlog-meal",
+   "script": [
+    "scripts/act.py",
+    "unlog-meal"
+   ],
+   "confirm": "once",
+   "writes": [
+    "store/meals.jsonl"
+   ],
+   "fields": {
+    "meal": {
+     "kind": "id",
+     "list": [
+      "scripts/act.py",
+      "meals"
+     ]
+    }
+   }
+  },
+  {
+   "name": "log-workout",
+   "script": [
+    "scripts/act.py",
+    "log-workout"
+   ],
+   "confirm": "undo",
+   "undo": "unlog-workout",
+   "writes": [
+    "store/workouts.jsonl"
+   ],
+   "fields": {
+    "kind": {
+     "kind": "choice",
+     "of": [
+      "walk",
+      "run",
+      "ride",
+      "swim",
+      "lift",
+      "yoga",
+      "row"
+     ]
+    },
+    "day": {
+     "kind": "date",
+     "from": -30,
+     "to": 0
+    },
+    "minutes": {
+     "kind": "number",
+     "min": 1,
+     "max": 600,
+     "step": 1,
+     "optional": true
+    }
+   }
+  },
+  {
+   "name": "unlog-workout",
+   "script": [
+    "scripts/act.py",
+    "unlog-workout"
+   ],
+   "confirm": "once",
+   "writes": [
+    "store/workouts.jsonl"
+   ],
+   "fields": {
+    "workout": {
+     "kind": "id",
+     "list": [
+      "scripts/act.py",
+      "workouts"
+     ]
+    }
+   }
+  },
+  {
+   "name": "export-step",
+   "script": [
+    "scripts/act.py",
+    "export-step"
+   ],
+   "confirm": "undo",
+   "undo": "export-unstep",
+   "writes": [
+    "store/steps.json"
+   ],
+   "fields": {
+    "step": {
+     "kind": "number",
+     "min": 1,
+     "max": 3,
+     "step": 1
+    }
+   }
+  },
+  {
+   "name": "export-unstep",
+   "script": [
+    "scripts/act.py",
+    "export-unstep"
+   ],
+   "confirm": "once",
+   "writes": [
+    "store/steps.json"
+   ],
+   "fields": {
+    "step": {
+     "kind": "number",
+     "min": 0,
+     "max": 3,
+     "step": 1
+    }
+   }
+  }
+ ],
+ "fits": {
+  "units": [
+   "swims",
+   "runs",
+   "rides",
+   "walks",
+   "lifts",
+   "yogas",
+   "rows",
+   "workouts",
+   "nights"
+  ],
+  "script": "scripts/goals.py",
+  "what": "swims, runs, rides, walks, workouts and nights of sleep from your iPhone's Health data"
+ }
+}

@@ -35,7 +35,7 @@ import os
 import re
 import unicodedata
 
-from . import files
+from . import files, settings
 
 MINUTES = 30
 REFUSED = "During the morning review, Claude uses only hydra think and the reads it lists."
@@ -52,6 +52,7 @@ WRITE_MOST = 8 * 1024 * 1024  # think.STDIN_MOST: a large read's answer
 SEARCH = "WebSearch"
 SEARCH_FIELDS = ("query", "mode")
 FREE = ("ToolSearch",)
+DELETE_TASK = "mcp__scheduled-tasks__delete_scheduled_task"  # the Claude app's own tool
 TOOL = re.compile(r"^mcp__(.+?)__(.+)$")
 # lock.py's _ID: the Claude app names a claude.ai connector's server by its id, a UUID, with underscores allowed for
 # the dashes, should a later version turn them into underscores as it does other characters.
@@ -301,6 +302,8 @@ def decide(root, event, now=None):
         if ok:
             touch(root, session, now)
         return (True, "") if ok else (False, WRITE_REFUSED)
+    if name == DELETE_TASK and settings.read(root).get("review") is False:
+        return True, ""  # with the review off, its own task may delete itself (think.OFF), and nothing else
     if name.startswith("mcp__") and at is not None and at >= since:
         for read in doc.get("reads") or []:
             if isinstance(read, dict) and same_tool(name, str(read.get("tool") or "")) and args == read.get("input"):

@@ -2,6 +2,14 @@
 
 Each version's notes, newest first. Home's What's new shows a version's first three lines once, after an update.
 
+## 1.1.0
+
+- **Only the Claude app.** Hydra-OS brings its own Python, checked before it's used. No Apple developer tools.
+- **A walkthrough to start.** Setup ends with a short tour in the chat, then asks what you're working toward.
+- **On from the start.** The helpers and a short morning review start with setup. Turn either off in Help.
+- **Buttons do it themselves.** Update, Repair, Remove and the helpers' switch run right on the page.
+- **Health data, a step at a time.** Claude walks you through your iPhone's export, or logs your workouts.
+
 ## 1.0.2
 
 - **Buttons instead of phrases.** Set up, Update, Repair and Remove are buttons now, and Claude takes it from there.

@@ -11,6 +11,9 @@ and the few writes Home's own pages make.
 
   POST /api/act/<app>/<action>     a page's save (hydralib/act.py)
   POST /api/focus, /api/request, /api/notes, /api/notes/remove; GET /api/panel
+  POST /api/update, /api/helpers, /api/repair, /api/remove: a step the button starts and Hydra-OS carries out in a
+                   process of its own (hydralib/work.py), how it went in GET /api/panel; POST /api/review,
+                   /api/widget/add, saved at once
   GET and PUT /api/layout          Home's layout, <root>/yours/layouts/home.json
   POST /api/walkthrough            a page's first-visit walkthrough, seen: {} for Home's, {"page": <id>} for an app's
   GET /api/shop                    each catalog page and where it stands, for Home's Shop page
@@ -60,7 +63,7 @@ import urllib.parse
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from hydralib import act, applog, browser, files, pages, panel, registry, settings, shop, upload, widgets, you  # noqa: E402
+from hydralib import act, applog, browser, files, pages, panel, registry, settings, shop, upload, widgets, work, you  # noqa: E402
 from hydralib import config as cfg  # noqa: E402
 from hydralib import health  # noqa: E402
 
@@ -573,7 +576,21 @@ def make_handler(config, timeout=TIMEOUT, budget=act.BUDGET, clock=None):
                 title = shop._listed(root, page)["title"]
             except shop.Refused as e:
                 return self.answer(dict({"ok": False, "said": str(e)}, **({"repair": True} if e.repair else {})))
-            return self.shop_work(page, "Adding %s\u2026" % title, lambda: shop.add(config, key))
+            return self.shop_work(page, "Adding %s\u2026" % title, lambda: self.key_add(page, title, key))
+
+        def key_add(self, page, title, key):
+            """A key's add from the Shop: the page put in the rail, then its setup handed to Claude, as only Claude can
+            lead a page's own steps (its sources, its accounts). A page with nothing to set up, its column.json's home
+            needing nothing, as Home draws no Set up for it, files none: its first read starts by itself."""
+            line = shop.add(config, key)
+            needs = ((registry.app(root, page) or {}).get("home") or {}).get("needs")
+            if line == "%s is in your rail." % title and needs:
+                try:
+                    panel.request(root, "setup", page, clock())
+                except panel.Refused:
+                    return line
+                return "%s Now say go to Claude to set it up." % line
+            return line
 
         def shop_checkout(self, value):
             page = value.get("id") if isinstance(value, dict) else None
@@ -598,16 +615,15 @@ def make_handler(config, timeout=TIMEOUT, budget=act.BUDGET, clock=None):
                 return set()
 
         def name_save(self, value):
-            """The welcome sheet's name, saved on the page with no Claude turn, by hydra name set's rule.
-            Empty saves nothing; either way the sheet is seen."""
+            """The name Home greets with, saved on the page with no Claude turn, by hydra name set's rule. Empty, from
+            "Not you?", keeps no name, by their own choice, so the account's name never comes back."""
             if set(value) != {"name"} or not isinstance(value.get("name"), str) or len(value["name"]) > 200:
                 return self.said(400, SENT_WRONG)
             text = " ".join(value["name"].split())
-            if text:
-                kept = you.clean(text)
-                if kept is None:
-                    return self.answer({"ok": False, "said": "That name can't be saved. Try letters only."})
-                you.save(root, kept)
+            kept = you.clean(text) if text else ""
+            if kept is None:
+                return self.answer({"ok": False, "said": "That name can't be saved. Try letters only."})
+            you.save(root, kept)
             settings.mark_welcome(root)
             return self.answer({"ok": True})
 
@@ -692,12 +708,92 @@ def make_handler(config, timeout=TIMEOUT, budget=act.BUDGET, clock=None):
                     return self.said(400, str(e))
             return self.answer({"ok": True, "said": said})
 
+        def widget_add(self, value):
+            """An offer Home's Add tile shows, put on Home, as `hydra widget add` does."""
+            wid = value.get("id") if isinstance(value, dict) else None
+            if set(value) != {"id"} or not isinstance(wid, str) or wid.count(".") != 1:
+                return self.said(400, SENT_WRONG)
+            with layout_lock:
+                try:
+                    said = widgets.add(root, *wid.split("."))
+                except ValueError as e:
+                    return self.said(400, str(e))
+            return self.answer({"ok": True, "said": said})
+
+        # ---- steps a button starts and Hydra-OS carries out itself (hydralib/work.py) -----------------------------
+
+        def start_step(self, step, app=""):
+            """A step started as its own run, its answer carrying the run's "at", as GET /api/panel's state for it does."""
+            why = work.start(config, step, app)
+            return self.answer(dict({"ok": not why, "said": why or work.working(root, step, app)},
+                                    **({} if why else {"at": work.started(root, step)})))
+
+        def update_core(self, value):
+            """Update on Home: Hydra-OS's own update, the tap its yes, how it went in GET /api/panel's "update"; with no
+            newer core in the catalog in force, that it's up to date, and nothing started."""
+            if value:
+                return self.said(400, SENT_WRONG)
+            from hydralib import update
+            if not update.ready(root):
+                return self.answer({"ok": False, "said": update.CURRENT})
+            return self.start_step("update")
+
+        def helpers_set(self, value):
+            """Help's helpers row: on or off, how it went in GET /api/panel's "helpers"."""
+            if set(value) != {"on"} or not isinstance(value.get("on"), bool):
+                return self.said(400, SENT_WRONG)
+            return self.start_step("helpers-on" if value["on"] else "helpers-off")
+
+        def repair_now(self, value):
+            """Repair, for Hydra-OS itself or one page: its checks and the fixes it can make, in GET /api/panel's
+            "repair", with "claude": true when what's left needs Claude."""
+            app = value.get("app", "") if isinstance(value, dict) else None
+            if set(value) - {"app"} or not isinstance(app, str) or (app and not settings.APP.fullmatch(app)):
+                return self.said(400, SENT_WRONG)
+            entry = registry.app(root, app) if app else None
+            if app and (not entry or entry.get("kind") == "main"):
+                return self.said(400, SENT_WRONG)
+            return self.start_step("repair", app)
+
+        def remove_all(self, value):
+            """Remove Hydra-OS, once the page has confirmed it: its answer first, then the step, which stops Home. With
+            an app, that page alone, from its own page's Remove, as a run of its own in GET /api/panel's "remove":
+            every page but Hydra-OS's own and Goals."""
+            from hydralib import remove
+            if value == {"confirm": True}:
+                why = work.start(config, "remove")
+                return self.answer({"ok": not why, "said": why or "Removed."})
+            app = value.get("app") if isinstance(value, dict) else None
+            if (not isinstance(value, dict) or set(value) != {"app", "confirm"} or value["confirm"] is not True
+                    or not isinstance(app, str) or not settings.APP.fullmatch(app)):
+                return self.said(400, SENT_WRONG)
+            entry = registry.app(root, app)
+            if not entry or entry.get("kind") == "main" or app in remove.KEPT:
+                return self.said(400, SENT_WRONG)
+            return self.start_step("remove-page", app)
+
+        def review_set(self, value):
+            """Help's morning review row. Off stops it at once: hydra think ends the run, and the task deletes itself.
+            On asks Claude for the task, as only Claude can make the app's scheduled task."""
+            if set(value) != {"on"} or not isinstance(value.get("on"), bool):
+                return self.said(400, SENT_WRONG)
+            new = settings.read(root)
+            new["review"] = value["on"]
+            settings.write(root, new)
+            if not value["on"]:
+                return self.answer({"ok": True, "said": "The morning review is off. Your pages still update from their files."})
+            panel.request(root, "review", "", clock())
+            return self.answer({"ok": True, "said": "The morning review is on. Claude makes its morning task at your next "
+                                                    "message in a Hydra-OS chat."})
+
     POSTS = {"/api/focus": Handler.focus, "/api/request": Handler.request, "/api/notes": Handler.note,
              "/api/notes/remove": Handler.remove_note,
              "/api/walkthrough": Handler.walkthrough, "/api/widget/remove": Handler.widget_remove,
              "/api/shop/key": Handler.shop_key, "/api/shop/update": Handler.shop_update,
              "/api/shop/checkout": Handler.shop_checkout, "/api/open": Handler.open_link, "/api/name": Handler.name_save,
-             "/api/tips/seen": Handler.tip_seen, "/api/whats-new": Handler.whats_new}
+             "/api/tips/seen": Handler.tip_seen, "/api/whats-new": Handler.whats_new,
+             "/api/widget/add": Handler.widget_add, "/api/update": Handler.update_core, "/api/helpers": Handler.helpers_set,
+             "/api/repair": Handler.repair_now, "/api/remove": Handler.remove_all, "/api/review": Handler.review_set}
     Handler.timeout = timeout
     return Handler
 

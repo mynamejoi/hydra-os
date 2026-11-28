@@ -1,22 +1,23 @@
 #!/bin/sh
-# hydra-setup: Hydra-OS's setup, run by Claude in the person's own chat after they said yes, by its full path in the
-# plugin Claude installed:
+# hydra-setup: Hydra-OS's setup, run by Claude in the person's own chat after they said yes, from the release the
+# README's one command fetched and checked:
 #
-#   hydra-setup --claude <the Claude Code running this chat> --helpers yes|no
+#   hydra-setup --claude <the Claude Code running this chat> [--helpers yes|no]
 #
-# --claude is the Claude Code this chat runs on, the one that installed the plugin. Setup uses it for Claude Code's own
-# plugin commands, since a Mac with the Claude app alone has no claude command of its own, and it never looks for one
-# anywhere else. --helpers is the person's own answer to whether Hydra-OS's two helpers, Home's server and the tick,
-# start at login, which Claude asks before setup. Without either, nothing changes, and it says what's needed.
+# --claude is the Claude Code this chat runs on. Setup uses it for Claude Code's own plugin commands, since a Mac with
+# the Claude app alone has no claude command of its own, and it never looks for one anywhere else. --helpers says
+# whether Hydra-OS's two helpers, Home's server and the tick, start at login: yes unless they said no, as the install's
+# one sentence tells them, and Help turns them off any time. Without --claude, nothing changes, and it says what's
+# needed.
 #
-# Hydra-OS runs on Apple's own python3, from Apple's free developer tools, which Claude Code's own start-up check
-# already asks a Mac to install. This checks they're there (xcode-select -p, and a python3 that starts). When they
-# aren't, it opens Apple's own installer (xcode-select --install), says so in one line, and changes nothing else.
-# Nothing is downloaded here. Then it runs setup, scripts/install.py, on /usr/bin/python3. It exits 0 once Hydra-OS is
-# set up, or 2 with a line on what stopped it.
-#
-# For tests only: HYDRA_TEST_PYTHON names another python3, and HYDRA_TEST_NO_DEVTOOLS=1 stands for a Mac without the
-# developer tools. Under any HYDRA_TEST_ switch, Apple's installer is never opened (HYDRA_TEST_OPENED notes it).
+# Hydra-OS runs on a Python of its own, never the Mac's own python3, which on a Mac without Apple's developer tools
+# only offers to install them. scripts/python.pins names one for each chip: a build from Astral's
+# python-build-standalone, the sha256 Astral publishes for it, and where it's published. Setup fetches the one for this
+# Mac's chip with curl, checks its sha256 with the Mac's own openssl before anything is unpacked, unpacks it with tar
+# into a folder of its own and starts it once. Nothing is signed again, and no mark is taken off: curl sets none. Then
+# setup runs on it, scripts/install.py, which keeps it in <root>/hydra/python/. Over a folder already set up, the copy
+# kept there is used as it is, with nothing fetched. It exits 0 once Hydra-OS is set up, or 2 with a line on what
+# stopped it.
 set -u
 umask 077
 PATH=/usr/bin:/bin:/usr/sbin:/sbin
@@ -30,51 +31,62 @@ stop() {  # its one line, then the line on what to do next
 }
 
 claude=""
-helpers=""
+helpers="yes"
 while [ $# -gt 0 ]; do
   case "$1" in
     --claude|--helpers)
-      [ $# -ge 2 ] || stop "hydra-setup takes --claude <the Claude Code running this chat> and --helpers yes or no."
+      [ $# -ge 2 ] || stop "hydra-setup takes --claude <the Claude Code running this chat>, and --helpers no when they said no."
       [ "$1" = --claude ] && claude=$2
       [ "$1" = --helpers ] && helpers=$2
       shift 2 ;;
-    *) stop "hydra-setup takes --claude <the Claude Code running this chat> and --helpers yes or no." ;;
+    *) stop "hydra-setup takes --claude <the Claude Code running this chat>, and --helpers no when they said no." ;;
   esac
 done
 case "$helpers" in
   yes|no) ;;
-  *) say "Before setup, ask them whether Hydra-OS's two helpers may start each time they log in to this Mac: Home's server, which shows their pages, and the tick, which starts each page's daily read every 15 minutes. With a no, nothing runs while no Hydra-OS chat is open. Then run this same hydra-setup with --helpers yes or --helpers no."
-     exit 2 ;;
+  *) stop "hydra-setup takes --helpers yes or no." ;;
 esac
 case "$claude" in
   /*/claude) [ -f "$claude" ] && [ -x "$claude" ] || claude="" ;;
   *) claude="" ;;
 esac
-[ -n "$claude" ] || stop "hydra-setup needs --claude with the full path of the Claude Code running this chat, the one that installed this plugin."
+[ -n "$claude" ] || stop "hydra-setup needs --claude with the full path of the Claude Code running this chat."
 
 here=$(cd "$(dirname "$0")/.." 2>/dev/null && pwd -P) || stop "Hydra-OS's setup can't find its own files."
 [ -f "$here/scripts/install.py" ] || stop "Hydra-OS's setup can't find its own files."
 root="$HOME/Hydra-OS"
-testing=no
-/usr/bin/env | /usr/bin/grep -q '^HYDRA_TEST_' && testing=yes
-py=${HYDRA_TEST_PYTHON:-/usr/bin/python3}
 
-# Apple's developer tools first: xcode-select -p before python3, since on a Mac without them /usr/bin/python3 itself
-# would ask to install them
-tools=yes
-if [ -n "${HYDRA_TEST_NO_DEVTOOLS:-}" ] || ! /usr/bin/xcode-select -p >/dev/null 2>&1; then
-  tools=no
-elif ! "$py" -I -c 'import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)' >/dev/null 2>&1; then
-  tools=no
-fi
-if [ "$tools" = no ]; then
-  if [ "$testing" = yes ]; then
-    [ -n "${HYDRA_TEST_OPENED:-}" ] && printf '%s\n' "xcode-select --install" >> "$HYDRA_TEST_OPENED"
-  else
-    /usr/bin/xcode-select --install >/dev/null 2>&1
-  fi
-  say "Hydra-OS runs on Apple's free developer tools, and they aren't on this Mac yet. Apple's installer is open now. Once it's done, run this same hydra-setup again."
-  exit 2
+# Its own Python, the one scripts/python.pins names for this Mac's chip: "<chip> <sha256> <address>" a line
+chip=$(/usr/bin/uname -m)
+pin=$(/usr/bin/awk -v chip="$chip" '$1 == chip && NF == 3 { print $2, $3; exit }' "$here/scripts/python.pins" 2>/dev/null)
+sum=${pin%% *}
+url=${pin#* }
+case "$sum" in
+  *[!0-9a-f]*|"") stop "Hydra-OS doesn't have a Python for this Mac's chip yet." ;;
+esac
+[ ${#sum} -eq 64 ] || stop "Hydra-OS doesn't have a Python for this Mac's chip yet."
+name=$(/usr/bin/basename "$url" .tar.gz)
+case "$name" in
+  ""|.*|*/*) stop "Hydra-OS doesn't have a Python for this Mac's chip yet." ;;
+esac
+kept="$root/hydra/python/$name/bin/python3"
+from=""
+if [ -f "$root/hydra/config.json" ] && "$kept" -I -c '' >/dev/null 2>&1; then
+  py=$kept
+else
+  stage=$(/usr/bin/mktemp -d -t hydra-python) || stop "Hydra-OS's setup couldn't start on this Mac."
+  trap '/bin/rm -rf "$stage"' EXIT
+  /usr/bin/curl -fsSL --proto '=https,file' --retry 2 -o "$stage/python.tar.gz" "$url" ||
+    stop "Hydra-OS couldn't download its Python. Check that this Mac is online."
+  got=$(/usr/bin/openssl dgst -sha256 "$stage/python.tar.gz" 2>/dev/null)
+  [ "${got##* }" = "$sum" ] || stop "Hydra-OS's Python download didn't match its published checksum, so it wasn't used."
+  /bin/mkdir "$stage/$name" && /usr/bin/tar -xzf "$stage/python.tar.gz" -C "$stage/$name" --strip-components 1 ||
+    stop "Hydra-OS couldn't unpack its Python."
+  /bin/rm -f "$stage/python.tar.gz"
+  py="$stage/$name/bin/python3"
+  "$py" -I -c 'import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)' >/dev/null 2>&1 ||
+    stop "Hydra-OS's Python didn't start on this Mac."
+  from="$stage/$name"
 fi
 
 # setup's own lines, kept and then said whole, so an end with none is known: Python ends 2 with its words on stderr
@@ -82,7 +94,11 @@ fi
 jobs=""
 [ "$helpers" = yes ] && jobs="--jobs"
 said=$(/usr/bin/mktemp -t hydra-setup) || stop "Hydra-OS's setup couldn't start on this Mac."
-HYDRA_CLAUDE=$claude "$py" -I -B "$here/scripts/install.py" $jobs --root "$root" --python "$py" > "$said"
+if [ -n "$from" ]; then
+  HYDRA_CLAUDE=$claude "$py" -I -B "$here/scripts/install.py" $jobs --root "$root" --python-from "$from" > "$said"
+else
+  HYDRA_CLAUDE=$claude "$py" -I -B "$here/scripts/install.py" $jobs --root "$root" --python "$py" > "$said"
+fi
 code=$?
 /bin/cat "$said"
 spoke=no

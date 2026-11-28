@@ -554,7 +554,7 @@ def _install(config, page, version, staged, key, env=None, prune=True):
         page_builds.app(config, page, force=True)
     except Exception:
         pass  # the page is built at its first look, as every page is
-    _offer(config, page, env)
+    _arrived(config, page, env)
     return entry
 
 
@@ -673,24 +673,36 @@ def prune_versions(root, page, version):
             shutil.rmtree(os.path.join(folder_, old), ignore_errors=True)
 
 
-OFFER_WAIT = 120  # seconds for Goals' arrived call
+OFFER_WAIT = 120  # seconds for Goals' arrived or left call
 
 
-def _offer(config, page, env=None):
-    """Ask Goals for its one offer: Goals' own
-    `scripts/act.py arrived --app=<page> --record <root>/goals`, which counts at once each goal already measured by the
-    page, and asks once of each goal kept by hand that fits it, "{Page} can count '{goal}' now.". Best effort: the page
-    is in either way, and Goals' next run catches up. Nothing when Goals isn't installed."""
+def _goals_step(config, verb, page):
+    """Goals' own `scripts/act.py <verb> --app=<page> --record <root>/goals`, its answer not read. Best effort: the page
+    is in or out either way, and if the call fails, Goals' goals stay as they were. Nothing when Goals isn't
+    installed."""
     goals = registry.app(config["root"], "goals")
     act = os.path.join((goals or {}).get("root") or "", "scripts", "act.py")
-    if page == "goals" or not goals or not os.path.isfile(act) or not os.path.isabs(config.get("python") or ""):
+    if page in ("goals", registry.MAIN) or not goals or not os.path.isfile(act) or not os.path.isabs(config.get("python")
+                                                                                                         or ""):
         return
     try:
-        subprocess.run([config["python"], "-B", "-s", act, "arrived", "--app=" + page, "--record", goals["record"]],
+        subprocess.run([config["python"], "-B", "-s", act, verb, "--app=" + page, "--record", goals["record"]],
                        cwd=config["root"], env=cfg.run_env(config), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                        stderr=subprocess.DEVNULL, timeout=OFFER_WAIT)
     except (OSError, subprocess.SubprocessError):
-        pass  # Goals' next run makes the offer
+        pass  # Goals' goals stay as they were
+
+
+def _arrived(config, page, env=None):
+    """Tell Goals a page arrived: it counts at once each goal the page measures, and moves to it each goal kept by hand
+    that fits, with its Undo, asking nothing."""
+    _goals_step(config, "arrived", page)
+
+
+def _left(config, page, env=None):
+    """Tell Goals a page left, once it's out of the registry (Goals refuses before): each goal in hand that page
+    counted is kept by hand at once, with its Undo, asking nothing, and Goals' page says so for 14 days."""
+    _goals_step(config, "left", page)
 
 
 def _open(config, page, key, pack_file=None, want=None, env=None):
@@ -813,26 +825,41 @@ def update(config, page=None, env=None):
     return out or ["Nothing to update."]
 
 
-def remove(config, page, env=None):
-    """A bought page out of Claude Code and the store, with its key; its own records stay in the Hydra-OS folder."""
+UNINSTALL_FAILED = "Claude Code didn't take %s out, so nothing was changed."
+
+
+def take_out(config, page, env=None, strict=False):
+    """A page out of Claude Code at local scope and out of the store, with its key and its place in bought.json when it
+    was bought, then the registry made again and Goals told it left (_left): what taking a page away shares, from the
+    chat or from its own page. strict: Claude Code's uninstall must go through, or nothing else changes."""
     root = config["root"]
-    pages_now = bought(root)
-    if page not in pages_now:
-        raise Refused("That page isn't one you've added.")
-    title = (registry.app(root, page) or {}).get("title") or page
-    _claude(config, ["plugin", "uninstall", "%s@%s" % (page, cfg.STORE), "--scope", "local"], env)
+    code, _ = _claude(config, ["plugin", "uninstall", "%s@%s" % (page, cfg.STORE), "--scope", "local"], env)
+    if strict and code != 0:
+        raise Refused(UNINSTALL_FAILED % ((registry.app(root, page) or {}).get("title") or page), repair=True)
     market_path = _marketplace(root)
     doc = files.read_json(market_path, {})
     if isinstance(doc, dict) and isinstance(doc.get("plugins"), list):
         doc["plugins"] = [e for e in doc["plugins"] if not (isinstance(e, dict) and e.get("name") == page)]
         files.write_json(market_path, doc)
     shutil.rmtree(os.path.join(root, "hydra", "store", page), ignore_errors=True)
-    pages_now.pop(page)
-    _write_bought(root, pages_now)
-    keys = _keys(root)
-    keys.pop(page, None)
-    _write_keys(root, keys)
+    pages_now = bought(root)
+    if page in pages_now:
+        pages_now.pop(page)
+        _write_bought(root, pages_now)
+        keys = _keys(root)
+        keys.pop(page, None)
+        _write_keys(root, keys)
     registry.build(config, env=env)
+    _left(config, page, env)
+
+
+def remove(config, page, env=None):
+    """A bought page out of Claude Code and the store, with its key; its own records stay in the Hydra-OS folder."""
+    root = config["root"]
+    if page not in bought(root):
+        raise Refused("That page isn't one you've added.")
+    title = (registry.app(root, page) or {}).get("title") or page
+    take_out(config, page, env)
     return "%s is out of your rail. Its own records stay in your Hydra-OS folder." % title
 
 

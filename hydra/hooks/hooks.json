@@ -1,19 +1,19 @@
 {
   "hooks": {
     "PreToolUse": [
-      { "hooks": [ {"type": "command", "command": "[ \"$CLAUDE_PROJECT_DIR\" = \"$HOME/Hydra-OS\" ] || exit 0; i=$(cat); r=\"$CLAUDE_PROJECT_DIR\"; f=\"$r/hydra/think/fence.json\"; if [ -f \"$r/hydra/config.json\" ] && [ ! -e \"$f\" ]; then case \"$i\" in *think*) ;; *) exit 0;; esac; fi; p=\"$HYDRA_PYTHON\"; [ -x \"$p\" ] || p=\"$HOME/Hydra-OS/hydra/bin/python3\"; [ -x \"$p\" ] || p=python3; printf '%s' \"$i\" | \"$p\" -I \"${CLAUDE_PLUGIN_ROOT}/hooks/review_fence.py\"; c=$?; { [ \"$c\" = 0 ] || [ \"$c\" = 2 ]; } && exit \"$c\"; [ -e \"$f\" ] && { echo \"During the morning review, Claude uses only hydra think and the reads it lists.\" >&2; exit 2; }; exit 0", "timeout": 10} ] }
+      { "hooks": [ {"type": "command", "command": "[ \"$CLAUDE_PROJECT_DIR\" = \"$HOME/Hydra-OS\" ] || exit 0; i=$(cat); r=\"$CLAUDE_PROJECT_DIR\"; f=\"$r/hydra/think/fence.json\"; if [ -f \"$r/hydra/config.json\" ] && [ ! -e \"$f\" ]; then case \"$i\" in *think*) ;; *) exit 0;; esac; fi; p=\"$HYDRA_PYTHON\"; [ -x \"$p\" ] || p=\"$HOME/Hydra-OS/hydra/bin/python3\"; if [ -x \"$p\" ]; then printf '%s' \"$i\" | \"$p\" -I \"${CLAUDE_PLUGIN_ROOT}/hooks/review_fence.py\"; c=$?; { [ \"$c\" = 0 ] || [ \"$c\" = 2 ]; } && exit \"$c\"; fi; [ -e \"$f\" ] && { echo \"During the morning review, Claude uses only hydra think and the reads it lists.\" >&2; exit 2; }; exit 0", "timeout": 10} ] }
     ],
     "SessionStart": [
-      { "hooks": [ {"type": "command", "command": "[ \"$CLAUDE_PROJECT_DIR\" = \"$HOME/Hydra-OS\" ] || exit 0; p=\"$HYDRA_PYTHON\"; [ -x \"$p\" ] || p=\"$HOME/Hydra-OS/hydra/bin/python3\"; [ -x \"$p\" ] || p=python3; exec \"$p\" -I \"${CLAUDE_PLUGIN_ROOT}/hooks/primer.py\"", "timeout": 10} ] }
+      { "hooks": [ {"type": "command", "command": "[ \"$CLAUDE_PROJECT_DIR\" = \"$HOME/Hydra-OS\" ] || exit 0; p=\"$HYDRA_PYTHON\"; [ -x \"$p\" ] || p=\"$HOME/Hydra-OS/hydra/bin/python3\"; [ -x \"$p\" ] || exit 0; exec \"$p\" -I \"${CLAUDE_PLUGIN_ROOT}/hooks/primer.py\"", "timeout": 10} ] }
     ],
     "UserPromptSubmit": [
-      { "hooks": [ {"type": "command", "command": "[ \"$CLAUDE_PROJECT_DIR\" = \"$HOME/Hydra-OS\" ] || exit 0; p=\"$HYDRA_PYTHON\"; [ -x \"$p\" ] || p=\"$HOME/Hydra-OS/hydra/bin/python3\"; [ -x \"$p\" ] || p=python3; exec \"$p\" -I \"${CLAUDE_PLUGIN_ROOT}/hooks/prompt.py\"", "timeout": 10} ] }
+      { "hooks": [ {"type": "command", "command": "[ \"$CLAUDE_PROJECT_DIR\" = \"$HOME/Hydra-OS\" ] || exit 0; p=\"$HYDRA_PYTHON\"; [ -x \"$p\" ] || p=\"$HOME/Hydra-OS/hydra/bin/python3\"; [ -x \"$p\" ] || exit 0; exec \"$p\" -I \"${CLAUDE_PLUGIN_ROOT}/hooks/prompt.py\"", "timeout": 10} ] }
     ],
     "PostToolUse": [
-      { "matcher": "WebSearch", "hooks": [ {"type": "command", "command": "[ \"$CLAUDE_PROJECT_DIR\" = \"$HOME/Hydra-OS\" ] || exit 0; [ -f \"$CLAUDE_PROJECT_DIR/hydra/think/fence.json\" ] || exit 0; p=\"$HYDRA_PYTHON\"; [ -x \"$p\" ] || p=\"$HOME/Hydra-OS/hydra/bin/python3\"; [ -x \"$p\" ] || p=python3; exec \"$p\" -I \"${CLAUDE_PLUGIN_ROOT}/hooks/review_keep.py\"", "timeout": 10} ] }
+      { "matcher": "WebSearch", "hooks": [ {"type": "command", "command": "[ \"$CLAUDE_PROJECT_DIR\" = \"$HOME/Hydra-OS\" ] || exit 0; [ -f \"$CLAUDE_PROJECT_DIR/hydra/think/fence.json\" ] || exit 0; p=\"$HYDRA_PYTHON\"; [ -x \"$p\" ] || p=\"$HOME/Hydra-OS/hydra/bin/python3\"; [ -x \"$p\" ] || exit 0; exec \"$p\" -I \"${CLAUDE_PLUGIN_ROOT}/hooks/review_keep.py\"", "timeout": 10} ] }
     ],
     "SessionEnd": [
-      { "hooks": [ {"type": "command", "command": "[ \"$CLAUDE_PROJECT_DIR\" = \"$HOME/Hydra-OS\" ] || exit 0; [ -f \"$CLAUDE_PROJECT_DIR/hydra/config.json\" ] || exit 0; p=\"$HYDRA_PYTHON\"; [ -x \"$p\" ] || p=\"$HOME/Hydra-OS/hydra/bin/python3\"; [ -x \"$p\" ] || p=python3; exec \"$p\" -I \"${CLAUDE_PLUGIN_ROOT}/hooks/session_end.py\"", "timeout": 10} ] }
+      { "hooks": [ {"type": "command", "command": "[ \"$CLAUDE_PROJECT_DIR\" = \"$HOME/Hydra-OS\" ] || exit 0; [ -f \"$CLAUDE_PROJECT_DIR/hydra/config.json\" ] || exit 0; p=\"$HYDRA_PYTHON\"; [ -x \"$p\" ] || p=\"$HOME/Hydra-OS/hydra/bin/python3\"; [ -x \"$p\" ] || exit 0; exec \"$p\" -I \"${CLAUDE_PLUGIN_ROOT}/hooks/session_end.py\"", "timeout": 10} ] }
     ]
   }
 }

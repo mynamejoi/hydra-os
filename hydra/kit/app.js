@@ -121,16 +121,20 @@
     .then(a => a && typeof a.ok === 'boolean' ? { ok: a.ok, said: typeof a.said === 'string' ? a.said : '', undo: a.undo && typeof a.undo === 'object' ? a.undo : null,
                                                   token: typeof a.token === 'string' ? a.token : '', repair: a.repair === true } : { ok: false, said: '', undo: null, token: '', repair: false });
   const notSaved = a => 'Not saved.' + (a.said ? ' ' + a.said : '');
-  /* An answer Repair can mend ("repair": true) puts a Repair button beside its line, handing Claude the repair of the page
-     it's about, or of Hydra-OS itself on Home's own pages. Any answer that doesn't ask for it takes the button away. */
+  /* An answer Repair can mend ("repair": true) puts a Repair button beside its line: Hydra-OS's own checks of the page it's
+     about, or of Hydra-OS itself on Home's own pages, run on the page. Any answer that doesn't ask for it takes it away. */
   const mend = (line, a, app) => {
     if (!line || !line.parentElement) return;
     const next = line.nextElementSibling, had = next && next.classList.contains('rpr') ? next : null;
-    if (!a || a.repair !== true) { if (had) had.remove(); return; }
+    if (!a || a.repair !== true) {
+      if (!had) return;
+      for (let n = had.nextElementSibling; n && (n.classList.contains('dsaid') || n.classList.contains('ask0'));) { const x = n; n = n.nextElementSibling; x.remove(); }
+      had.remove(); return;
+    }
     if (had) return;
     const b = document.createElement('button');
-    b.type = 'button'; b.className = 'cta rpr'; b.dataset.connect = ''; b.dataset.kind = 'repair';
-    b.dataset.app = ['home', 'help', 'privacy', 'shop'].includes(app) ? '' : String(app || ''); b.textContent = 'Repair';
+    b.type = 'button'; b.className = 'cta rpr'; b.dataset.do = 'repair'; b.textContent = 'Repair';
+    b.dataset.fields = JSON.stringify({ app: ['home', 'help', 'privacy', 'shop'].includes(app) ? '' : String(app || '') });
     line.after(b);
   };
   const flash = (el, text, ms) => { el.textContent = text; clearTimeout(el._t); if (ms) el._t = setTimeout(() => { if (el.textContent === text) el.textContent = ''; }, ms); };
@@ -352,9 +356,8 @@
     if (c && !c.disabled) {
       const r = { kind: c.dataset.kind || 'connect', app: 'app' in c.dataset ? c.dataset.app : APP }; if (c.dataset.service) r.service = c.dataset.service;
       c.disabled = true;
-      const NOT = { connect: 'Not sent. Tell Claude what you use.', 'add-app': "Not sent. Tell Claude what you'd like here.", repair: 'Not sent. Try Repair again in a moment.', remove: 'Not sent. Try again in a moment.', review: 'Not sent. Tell Claude to turn on the morning review.',
-                    'helpers-on': "Not sent. Tell Claude to turn Hydra-OS's background helpers on.", setup: 'Not sent. Ask Claude to set it up, in the chat beside this page.',
-                    update: 'Not sent. Ask Claude to update Hydra-OS, in the chat beside this page.', 'helpers-off': "Not sent. Tell Claude to turn Hydra-OS's background helpers off.", about: 'Not sent. Ask Claude about it, in the chat beside this page.' };
+      const NOT = { connect: 'Not sent. Tell Claude what you use.', repair: 'Not sent. Try again in a moment.',
+                    setup: 'Not sent. Ask Claude to set it up, in the chat beside this page.', about: 'Not sent. Ask Claude about it, in the chat beside this page.' };
       send('POST', '/api/request', r).then(a => { c.disabled = false; tip(c, a && a.ok ? 'Now say go to Claude' : NOT[r.kind] || NOT.connect); });
     }
     pins.forEach(p => { if (p !== b) p.classList.remove('open'); });
@@ -505,8 +508,11 @@
   if (LIVE && APP) { setInterval(poll, 1000); document.addEventListener('visibilitychange', poll); }
   { const k = keep.get('hydra-keep'); keep.set('hydra-keep', null);
     if (k && k.path === location.pathname && Date.now() - k.at < 15000) {
-      scrollTo(0, k.y); const el = k.id ? document.getElementById(k.id) : k.top ? $('h1') : null;  /* the page's heading, where a sheet gave focus back */
+      scrollTo(0, k.y); const el = k.id ? document.getElementById(k.id) : k.top ? $('h1') : null;  /* the page's heading, where it had the focus */
       if (el && k.top && !el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+      if (el && typeof k.said === 'string' && k.said) {  /* a switch's answer, beside its button again */
+        const s = document.createElement('span'); s.className = 'dsaid'; s.setAttribute('role', 'status'); s.textContent = k.said; el.after(s);
+      }
       if (el && !el.closest('[hidden]')) { if (typeof k.back === 'string' && el.matches('input')) { el.value = k.back; el.dataset.back = '1'; el.dispatchEvent(new Event('input', { bubbles: true })); } el.focus({ preventScroll: true }); }
     } }
 
@@ -515,72 +521,12 @@
   /* Tips, not a tour: the page's own, in order. The first one
      whose part is on the page, with data where it waits for data, shows once its part is in view: one line on a small
      solid bubble pointing at it. One at a time and at most one a visit (none within 30 minutes of the last, on any
-     page), never while a sheet is up, and each once: the page keeps it as seen as soon as it shows, and Home's server
+     page), and each once: the page keeps it as seen as soon as it shows, and Home's server
      once it's closed or the page goes (POST /api/tips/seen), since a seen tip builds the page again and Home opens in
      place without it. x or Escape closes it. Home inside another page's frame shows none. */
   const inWindow = () => { try { return LIVE && window.top === window; } catch (e) { return false; } };
   const atFoot = el => document.body.insertBefore(el, $('body > script'));  /* the kit's script stays the body's last element */
 
-  /* A sheet: Home's welcome, What's new, or
-     a page's connect ask, one at a time over the page dimmed behind it, which can't be reached while it's up. Focus
-     starts in it, Tab goes round its own controls, and focus comes back to the page when it goes. It comes in with
-     opacity and a scale from .98, 300 ms; with reduced motion it only fades, 200 ms. The page hears it go through a
-     "hydra:sheet" event. A connect ask is kept as seen by the page as soon as it shows, and by Home's server once it's
-     answered or the page goes. */
-  const sheet = $('.sheet[data-sheet]');
-  if (sheet && inWindow()) (() => {
-    const kind = sheet.dataset.sheet, app = sheet.dataset.app || APP, ask = kind === 'ask' && sheet.dataset.tip;
-    const mine = `hydra-tips:${app}`, had = (() => { try { return JSON.parse(localStorage.getItem(mine)) || []; } catch (e) { return []; } })();
-    if (ask && Array.isArray(had) && had.includes(ask)) return;  /* asked once already, here */
-    const box = $('.sh', sheet), field = $('input', box), said = $('.said', box), go = $('[data-sheet-go]', box), later = $('[data-sheet-later]', box);
-    const still = matchMedia('(prefers-reduced-motion:reduce)'), was = document.activeElement;
-    atFoot(sheet);  /* out of the page it holds back */
-    const behind = [...document.body.children].filter(e => e !== sheet && e.tagName !== 'SCRIPT');
-    let told = false;
-    const tell = () => {
-      if (told || !ask) return; told = true;
-      try { fetch('/api/tips/seen', { method: 'POST', credentials: 'same-origin', cache: 'no-store', keepalive: true, headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ app, tip: ask }) }).catch(() => {}); } catch (e) {}
-    };
-    const controls = () => $$('input, button, a[href]', box).filter(e => !e.disabled && e.getClientRects().length);
-    const keys = e => {
-      if (e.key === 'Tab') { const o = controls(), k = o.indexOf(document.activeElement); e.preventDefault(); if (o.length) o[(k + (e.shiftKey ? -1 : 1) + o.length) % o.length].focus(); }
-      else if (e.key === 'Escape') { const b = later || (sheet.dataset.esc === 'go' ? go : null); if (b) { e.preventDefault(); b.click(); } }
-      else if (e.key === 'Enter' && e.target === field && !e.isComposing) { e.preventDefault(); go.click(); }
-    };
-    const close = detail => {
-      document.removeEventListener('keydown', keys, true); tell();
-      sheet.classList.remove('on'); behind.forEach(e => { e.inert = false; });
-      setTimeout(() => { sheet.hidden = true; }, still.matches ? 200 : 300);
-      const back = was && was !== document.body && document.contains(was) ? was : $('h1');
-      if (back) { if (!back.matches('a[href], button, input, textarea, select, [tabindex]')) back.setAttribute('tabindex', '-1'); back.focus({ preventScroll: true }); }
-      document.dispatchEvent(new CustomEvent('hydra:sheet', { detail: Object.assign({ kind }, detail) }));
-    };
-    const busy = on => { go.disabled = on; if (later) later.disabled = on; };
-    go.addEventListener('click', () => {
-      if (go.disabled) return;
-      if (kind === 'welcome') {  /* the name, saved on the page with no Claude turn; an empty field is fine */
-        const name = field ? field.value.trim() : '';
-        busy(true);
-        send('POST', '/api/name', { name }).then(a => {
-          busy(false);
-          if (a && a.ok) { close({ name }); return; }
-          said.textContent = a && typeof a.said === 'string' && a.said ? a.said : 'Not saved. Try again in a moment.';
-          if (field) field.focus();
-        });
-      } else if (kind === 'ask') {  /* the page's own Connect: the same request, and its note beside it */
-        close({ connect: true });
-        const own = $$(`[data-connect][data-app="${CSS.escape(app)}"]`).find(e => e.getClientRects().length);
-        if (own) own.click(); else send('POST', '/api/request', { kind: 'connect', app });
-      } else { send('POST', '/api/whats-new', {}); close({}); }
-    });
-    if (later) later.addEventListener('click', () => close({}));
-    if (ask) { try { localStorage.setItem(mine, JSON.stringify([...(Array.isArray(had) ? had : []), ask])); } catch (e) {} addEventListener('pagehide', tell); }
-    behind.forEach(e => { e.inert = true; });
-    document.addEventListener('keydown', keys, true);
-    sheet.hidden = false; void sheet.offsetWidth; sheet.classList.add('on');
-    (field || go).focus({ preventScroll: true });
-  })();
   const tipList = $('ol.tips[data-app]');
   if (tipList && inWindow()) (() => {
     const app = tipList.dataset.app, mine = `hydra-tips:${app}`, GAP = 30 * 60 * 1000;
@@ -609,6 +555,13 @@
     const place = () => {
       if (!bubble) return;
       const r = a.getBoundingClientRect(), w = bubble.offsetWidth, h = bubble.offsetHeight;
+      if (a.closest('.rail')) {  /* a part of the rail: beside it, to its right, as fixed as the rail is */
+        const top = Math.max(16, Math.min(r.top + r.height / 2 - h / 2, innerHeight - h - 16));
+        bubble.classList.add('side'); bubble.classList.remove('up');
+        bubble.style.left = `${Math.round(r.right + 12)}px`; bubble.style.top = `${Math.round(top)}px`;
+        bubble.style.setProperty('--ay', `${Math.round(Math.max(12, Math.min(h - 24, r.top + r.height / 2 - top - 6)))}px`);
+        return;
+      }
       const left = Math.max(16, Math.min(r.left, innerWidth - w - 16)), below = r.bottom + 12 + h <= innerHeight || r.top - 12 - h < 0;
       bubble.classList.toggle('up', !below);
       bubble.style.left = `${Math.round(left + scrollX)}px`;
@@ -622,7 +575,7 @@
       removeEventListener('resize', place); document.removeEventListener('keydown', keys);
     };
     const show = () => {
-      if (bubble || $('.sheet:not([hidden])')) return;  /* never over a sheet: the next visit has it */
+      if (bubble) return;
       write('hydra-tip-at', Date.now()); write(mine, [...seen, t.dataset.tip]); addEventListener('pagehide', tell);
       bubble = document.createElement('div'); bubble.className = 'tipb'; bubble.dataset.tip = t.dataset.tip; bubble.setAttribute('role', 'status');
       const line = document.createElement('p'), x = document.createElement('button');
@@ -635,6 +588,90 @@
     const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); show(); } }, { threshold: 0.6 });
     io.observe(a);
   })();
+
+  /* A button Hydra-OS carries out itself, on the page, with no turn in the chat: data-do names Home's server's route and
+     data-fields what it sends. data-question asks first, in its place, with data-yes and Keep it. The answer is said
+     beside it; "repair": true puts Repair beside that, and "claude": true offers Ask Claude about it, for what only
+     Claude can finish. */
+  const beside = (el, text) => {
+    let s = el.nextElementSibling;
+    if (!s || !s.classList.contains('dsaid')) { s = document.createElement('span'); s.className = 'dsaid'; s.setAttribute('role', 'status'); el.after(s); }
+    s.textContent = text; return s;
+  };
+  const askAfter = (said, a, route, app) => {
+    const next = said.nextElementSibling, ask = next && next.classList.contains('ask0') ? next : null;
+    if (!(a && a.claude === true)) { if (ask) ask.remove(); return; }
+    if (ask) return;
+    const c = document.createElement('button'), kind = route === 'review' ? 'review' : 'repair';  /* the review's task is Claude's to make */
+    c.type = 'button'; c.className = 'cta ask0'; c.dataset.connect = ''; c.dataset.kind = kind;
+    c.dataset.app = kind === 'repair' && !['home', 'help', 'privacy', 'shop'].includes(app) ? String(app || '') : ''; c.textContent = 'Ask Claude about it'; said.after(c);
+  };
+  /* What a press that's done leaves: data-then="hide" takes a one-way button away, and data-then="reload" opens the
+     page again, focus back on the button by its id and its answer beside it, for a row that says its new state only
+     from a new build, unless Claude has the rest to do; data-then="home" opens Home, once the page itself is gone. */
+  const reopen = (b, text, ms) => {
+    keep.set('hydra-keep', { path: location.pathname, y: scrollY, id: b.id || '', top: false, back: null, said: text, at: Date.now() });
+    holding++; setTimeout(() => location.reload(), ms);
+  };
+  const finish = (b, said, a) => {
+    if (b.dataset.then === 'home') { setTimeout(() => { try { window.top.location.assign('/'); } catch (e) { location.assign('/'); } }, 1200); return; }  /* the page is gone: Home */
+    if (b.dataset.then === 'hide') { b.hidden = true; if (!said.hasAttribute('tabindex')) said.tabIndex = -1; said.focus(); }
+    if (b.dataset.then === 'reload' && !(a && a.claude === true)) reopen(b, said.textContent, 700);
+  };
+  /* Update, the helpers, Repair and a page's own Remove each run on their own: the answer says it has started, and its end comes in the
+     panel under the route's name, which keeps it a while after. The run is this press's by its "at"; with none, once
+     it has been seen working, or once it's no longer the state from before the press. An update that's done opens
+     the new build, and a switch that's done opens its page again at once, its row saying the new state; one that
+     failed says why, and the button is back. */
+  const RUNS = ['update', 'helpers', 'repair', 'remove'];  /* Remove with an app: a page's; Hydra-OS's own answers at once */
+  let panelNow = null; heard.push(p => { panelNow = p; });
+  const watch = (b, said, route, app, a, before) => {
+    const at = typeof a.at === 'string' ? a.at : '';
+    let seen = false, polls = 0, over = false;
+    if (route === 'update') b.hidden = true;
+    b.disabled = true; holding++;
+    heard.push(p => {
+      const u = p && p[route]; if (over) return; polls++;
+      if (!u || typeof u !== 'object' || (at && u.at !== at)) return;
+      if (u.state === 'working') { seen = true; return; }
+      if (u.state !== 'done' && u.state !== 'failed') return;
+      if (!at && !seen && JSON.stringify(u) === before && polls < 10) return;
+      over = true; holding = Math.max(0, holding - 1); b.disabled = false;
+      if (route === 'update' && u.state === 'done') { location.reload(); return; }
+      if (u.state === 'done' && b.dataset.then === 'reload' && u.claude !== true) { reopen(b, '', 0); return; }
+      said.textContent = typeof u.said === 'string' && u.said ? u.said : u.state === 'done' ? 'Done.' : "That didn't go through. Try again in a moment.";
+      mend(said, u, app); askAfter(said, u, route, app);
+      if (route === 'update') b.hidden = false;
+      if (u.state === 'done') finish(b, said, u);
+    });
+  };
+  const doIt = (b, fields, route) => {
+    const app = typeof fields.app === 'string' ? fields.app : APP, before = JSON.stringify((panelNow && panelNow[route]) || null);
+    b.disabled = true;
+    return send('POST', '/api/' + route, fields).then(a => {
+      b.disabled = false;
+      const said = beside(b, a && typeof a.said === 'string' && a.said ? a.said : a && a.ok ? 'Done.' : "That didn't go through. Try again in a moment.");
+      mend(said, a, app); askAfter(said, a, route, app);
+      if (a && a.ok) { if (RUNS.includes(route) && !(route === 'remove' && !fields.app)) watch(b, said, route, app, a, before); else finish(b, said, a); }
+      return a;
+    });
+  };
+  document.addEventListener('click', e => {
+    const b = e.target.closest('button[data-do]'); if (!b || b.disabled) return;
+    let fields = {}; try { fields = JSON.parse(b.dataset.fields || '{}'); } catch (x) {}
+    if (!b.dataset.question) { doIt(b, fields, b.dataset.do); return; }
+    /* asked first, in its place: the question, then the button's own word and Keep it */
+    const box = document.createElement('span'), q = document.createElement('span'), yes = document.createElement('button'), no = document.createElement('button');
+    box.className = 'dconf'; q.className = 'dsaid'; q.setAttribute('role', 'status'); q.textContent = b.dataset.question;
+    yes.type = 'button'; yes.className = 'cta'; yes.textContent = b.dataset.yes || b.textContent; if (b.dataset.then) yes.dataset.then = b.dataset.then;
+    no.type = 'button'; no.className = 'alt'; no.textContent = 'Keep it';
+    box.append(q, yes, no); b.hidden = true; b.after(box); holding++; yes.focus();
+    no.addEventListener('click', () => { holding = Math.max(0, holding - 1); box.remove(); b.hidden = false; b.focus(); });
+    yes.addEventListener('click', () => {
+      yes.disabled = no.disabled = true;
+      doIt(yes, fields, b.dataset.do).then(a => { if (a && a.ok) { q.remove(); no.remove(); yes.remove(); } else { yes.disabled = no.disabled = false; } });
+    });
+  });
 
   window.HydraKit = { $, $$, ss, clamp, nowMin, today, paintSky, onPaint: fn => { painted.push(fn); paintSky(); }, onPanel: fn => heard.push(fn), send, act, tip, notSaved, mend, keep, live: LIVE };
 })();

@@ -4,8 +4,8 @@
                              gets the same one
   <root>/hydra/tmp           TMPDIR for every Hydra-OS process, so its temporary files stay in the Hydra-OS folder
 
-Hydra-OS runs on Apple's own python3, from Apple's free developer tools, which setup checks are there, so nothing here
-stands in for one of Apple's tools, and no Hydra-OS process is given a DEVELOPER_DIR. A folder an older build set up
+Hydra-OS runs on its own Python, which hydra-setup fetches and checks and setup keeps in <root>/hydra/python/, so
+nothing here stands in for one of Apple's tools, and no Hydra-OS process is given a DEVELOPER_DIR. A folder an older build set up
 loses the stand-ins that build wrote (OLD_NAMES and its devtools folder). Python 3.9 standard library only.
 """
 import os

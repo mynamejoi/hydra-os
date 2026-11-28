@@ -99,8 +99,8 @@ SYSTEM_PATH = "/usr/bin:/bin:/usr/sbin:/sbin"
 def session_env(config, given=None):
     """What every Hydra-OS process gets: Hydra-OS's own small tools first on PATH, then Claude Code's folder, then the
     system's, with no Homebrew; HYDRA_PYTHON; Claude Code's git status snapshot off; and once setup has made it
-    (hydralib/tools.py), TMPDIR in the Hydra-OS folder. Never a DEVELOPER_DIR: Hydra-OS runs on Apple's own python3,
-    which finds Apple's developer tools as macOS sets them. given: kept for its callers, and not read."""
+    (hydralib/tools.py), TMPDIR in the Hydra-OS folder. Never a DEVELOPER_DIR: Hydra-OS runs on its own Python, which
+    needs nothing of Apple's developer tools. given: kept for its callers, and not read."""
     from . import tools  # noqa: PLC0415 (tools imports files, as this module does)
     root = config["root"]
     claude_dir = os.path.dirname(config["claude"]) if config.get("claude") else ""
@@ -151,6 +151,13 @@ def run_env(config, extra=None):
 PASS_NAME = re.compile(r"[A-Z][A-Z0-9_]{0,63}")
 NEVER_PASS = ("ANTHROPIC_", "CLAUDE_", "HYDRA_", "PYTHON", "DYLD_", "LD_")
 NEVER_NAMES = ("PATH", "HOME", "LANG", "LC_ALL", "SHELL", "TMPDIR")
+
+
+def test_switches(environ=None):
+    """For tests only: the HYDRA_TEST_ switches of this process, for a server it starts, as jobs.test_load gives a
+    test's job its own, so that server and every step it starts reach only the test's stand-ins. A real process has
+    none."""
+    return {k: v for k, v in (os.environ if environ is None else environ).items() if k.startswith("HYDRA_TEST_")}
 
 
 def test_pass(environ):

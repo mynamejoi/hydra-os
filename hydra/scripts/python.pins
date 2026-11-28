@@ -1,0 +1,2 @@
+arm64 431b99a9c2cdd37ad9b06e425be0e520d2dbce0552abe454257abef592fe3634 https://github.com/astral-sh/python-build-standalone/releases/download/20261124/cpython-3.12.16+20261124-aarch64-apple-darwin-install_only.tar.gz
+x86_64 ccce24cfd3f56f62561d2c9480fcc567ca3a9bac68450cd73e11aeb631befa1f https://github.com/astral-sh/python-build-standalone/releases/download/20261124/cpython-3.12.16+20261124-x86_64-apple-darwin-install_only.tar.gz

@@ -103,7 +103,8 @@ def start_plain(config, main_root=None, wait=SERVER_WAIT):
     root = config["root"]
     proc = subprocess.Popen(
         [config["python"], "-B", "-s", os.path.join(main_root or _main_root(config), "scripts", "server.py"), "--root",
-         root], cwd=root, env=cfg.run_env(config), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+         root], cwd=root, env=dict(cfg.run_env(config), **cfg.test_switches()), stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL, close_fds=True, start_new_session=True)
     files.write_json(_pid_path(root), {"pid": proc.pid, "at": _now().isoformat()})
     end = time.monotonic() + wait

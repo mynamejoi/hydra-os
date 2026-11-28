@@ -460,6 +460,15 @@ def went_through(lines):
 
 
 READY = "Hydra-OS %s is ready. What's new:"
+CURRENT = "Hydra-OS is up to date."
+
+
+def ready(root, env=None):
+    """The newer core the catalog in force offers, as Home's Update shows it, or "": no reading of the shop, just the
+    copy the daily read kept, checked against the shop's key again."""
+    have = str((registry.app(root, registry.MAIN) or {}).get("version") or "")
+    core = shop.catalog(root, env).get("core") or {}
+    return core["version"] if core.get("version") and shop.vt(core["version"]) > shop.vt(have) else ""
 PAGE_READY = "%s %s is ready."
 
 

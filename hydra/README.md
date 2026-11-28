@@ -1,6 +1,6 @@
 # hydra: Hydra-OS itself
 
-The main plugin of Hydra-OS. It sets up your Hydra-OS folder, `~/Hydra-OS`, serves Home and each of your pages on this Mac only, starts each page's daily read, and tells Claude where you are on your pages. Python 3.9 standard library only, on the Mac's own `/usr/bin/python3`.
+The main plugin of Hydra-OS. It sets up your Hydra-OS folder, `~/Hydra-OS`, serves Home and each of your pages on this Mac only, starts each page's daily read, and tells Claude where you are on your pages. Python 3.9 standard library only, on a Python of its own that setup fetches and checks by its sha256.
 
 It never starts a model on its own, never signs you in or reads a sign-in, never installs or updates Claude Code, and never writes Claude Code's settings outside `~/Hydra-OS`, nor anything in `~/.claude`. Claude Code's own plugin commands, run in your chat after your yes, do the installing.
 
@@ -10,7 +10,8 @@ It never starts a model on its own, never signs you in or reads a sign-in, never
 |---|---|
 | `.claude-plugin/plugin.json` | The plugin's manifest |
 | `column.json` | Hydra-OS's own entry among your pages: Home and Dreams |
-| `bin/hydra-setup` | Setup, run by Claude in your chat after your yes, with the Claude Code running the chat and your answer on the helpers: `hydra-setup --claude <path> --helpers yes\|no`. It checks Apple's free developer tools are on this Mac, opens Apple's own installer when they aren't, then runs `scripts/install.py` |
+| `bin/hydra-setup` | Setup, run by Claude in your chat from the release the README's one command checked, with the Claude Code running the chat: `hydra-setup --claude <path> [--helpers no]`. It fetches Hydra-OS's own Python for this Mac's chip, as `python.pins` names it, checks its sha256 before anything is unpacked, then runs `scripts/install.py` on it |
+| `scripts/python.pins` | Hydra-OS's own Python for each chip: `<chip> <sha256> <address>` a line, Astral's python-build-standalone build and the sha256 Astral publishes for it |
 | `scripts/install.py` | Setup itself: the folder, its own store of pages, the `hydra` command, Home's server and, with your yes, the helpers |
 | `scripts/hydra.py` | The `hydra` command Claude runs in your chat, after your yes. `hydra --help` lists what it does |
 | `scripts/server.py` | Home's server, on this Mac's loopback address only: your pages, and the few saves they make |

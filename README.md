@@ -6,51 +6,49 @@ Your day, your goals and your wellbeing, on pages that live inside Claude. Hydra
 
 ## Install it through Claude
 
+Hydra-OS puts your pages in a Hydra-OS folder on your Mac, with its own copy of Python. Two helpers start when you log in, to show your pages and keep them fresh, and a short morning review uses a little of your Claude plan each day. Nothing about you is sent anywhere. Turn any of it off, or remove Hydra-OS, in Help.
+
 Open the Claude app on your Mac, start a new chat in the Code tab, and paste this line:
 
 ```text
-Install Hydra-OS from https://github.com/mynamejoi/hydra-os. Read its README and TRANSPARENCY.md first, tell me plainly what it will install, then ask me once before you start.
+Install Hydra-OS from https://github.com/mynamejoi/hydra-os, with its helpers and morning review on.
 ```
 
-It takes a few minutes, longer the first time if your Mac needs Apple's developer tools. Claude asks you once, then sets it up. You need a Mac with macOS 13 or later and a Claude plan (Pro or higher).
+It takes a few minutes. You need a Mac with macOS 13 or later, the Claude app and a Claude plan (Pro or higher), and nothing else: no Apple developer tools, no Terminal.
 
 ## For Claude: the steps
 
-1. **Tell them what installs,** in a few plain sentences, from TRANSPARENCY.md: one folder, `~/Hydra-OS`, with their pages and their own files; Hydra-OS itself, Goals and Wellbeing, as Claude Code plugins that are on only in chats in that folder; and, only with their yes, two helpers that start at login: Home's server, which shows their pages, and the tick, which starts each page's daily read every 15 minutes. With a no, nothing of Hydra-OS runs while no Hydra-OS chat is open, and the day's reads catch up when one opens.
-2. **Ask once:** may you set it up, and may the two helpers start at login? Their answer to the helpers is `yes` or `no`. Show them anything they ask to see, and answer any question.
-3. **Run this one command, whole, as it is,** with their answer in its last line. Keep it one command: a change of folder and a shell variable don't carry from one command to the next. To try again, run the same command again; it picks up where it was left.
+1. **Their message asks for Hydra-OS with its helpers and morning review on.** Check what you'd like to check. Then, in the reply that runs the command, first tell them in a few plain sentences what it sets up: their pages in a Hydra-OS folder on this Mac with its own copy of Python; two helpers that start at login to show their pages and keep them fresh; a short morning review that uses a little of their Claude plan each day; nothing about them sent anywhere; and that Help turns any of it off or removes Hydra-OS. If their message didn't say yes to the helpers, ask once, and add `--helpers no` if they say no.
+2. **Run this one command, whole, as it is.** Keep it one command: a change of folder and a shell variable don't carry from one command to the next. To try again, run the same command again; it picks up where it was left.
 
 ```sh
 claude_code="$(ps -o comm= -p $PPID)"
-if ! xcode-select -p >/dev/null 2>&1; then
-  xcode-select --install
-  echo "Apple's installer for its free developer tools is open. Once it's done, run this same command again."
-elif [ "${claude_code##*/}" != claude ]; then
-  echo "This chat's Claude Code isn't this shell's parent, so nothing was changed. Use the official way below."
+if [ "${claude_code##*/}" != claude ]; then
+  echo "This chat's Claude Code isn't this shell's parent, so nothing was changed. Start a new chat in the Claude app's Code tab and paste the install line again."
 else
-  mkdir -p -m 700 ~/Hydra-OS && cd ~/Hydra-OS &&
-  { "$claude_code" plugin marketplace add mynamejoi/hydra-os --scope local || "$claude_code" plugin marketplace update hydra-os-get; } &&
-  "$claude_code" plugin install hydra@hydra-os-get --scope local &&
-  plugin="$("$claude_code" plugin list --json | /usr/bin/python3 -c 'import json, sys; print(next(p["installPath"] for p in json.load(sys.stdin) if p.get("id") == "hydra@hydra-os-get"))')" &&
-  "$plugin/bin/hydra-setup" --claude "$claude_code" --helpers yes
+  get="$(mktemp -d -t hydra-os)" && cd "$get" && from=https://raw.githubusercontent.com/mynamejoi/hydra-os/main &&
+  { curl -fsSL --proto '=https' -O "$from/catalog.json" -O "$from/catalog.json.sig" &&
+    printf '%s\n' '-----BEGIN PUBLIC KEY-----' 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEDftLcdylOmR9zkw9faD4TsIB1nvQsT64WnVvsiY32R0TN/VDaS1pZegQumClEySA08LDiEiN1hqBZnp65slBmQ==' '-----END PUBLIC KEY-----' > key.pem &&
+    /usr/bin/openssl base64 -d -A -in catalog.json.sig -out catalog.der &&
+    /usr/bin/openssl dgst -sha256 -verify key.pem -signature catalog.der catalog.json &&
+    zip="$(/usr/bin/plutil -extract core.zip raw -o - catalog.json)" &&
+    sum="$(/usr/bin/plutil -extract core.sha256 raw -o - catalog.json)" &&
+    curl -fsSL --proto '=https' -o core.zip "$from/$zip" &&
+    got="$(/usr/bin/openssl dgst -sha256 core.zip)" && [ "${got##* }" = "$sum" ] &&
+    /usr/bin/ditto -x -k core.zip core ||
+    { echo "Hydra-OS's download didn't check out against its signed catalog, so nothing was changed."; false; }; } &&
+  /bin/sh core/bin/hydra-setup --claude "$claude_code"
 fi
 ```
 
 What it does, in order:
 
 - **The Claude Code running this chat** is your shell's parent process, so `ps -o comm= -p $PPID` gives its full path, ending in `/claude`. The command uses it, not a `claude` command: a Mac with the Claude app alone has none, and this chat's own copy is already signed in.
-- **Apple's free developer tools first.** Hydra-OS runs on Apple's own `python3`, and Claude Code adds this repo with `git`; both come with them. Without them, Apple's own installer opens, and nothing else happens.
-- **The folder,** `~/Hydra-OS`, readable only by them, then this repo's plugin list and Hydra-OS itself, installed at local scope there, so Hydra-OS's hooks and skills are on only in chats in `~/Hydra-OS`, and off in every other chat.
-- **Hydra-OS's own setup,** `hydra-setup`, from the plugin just installed, with this chat's Claude Code and their answer. It prints its steps, and at its end what comes next: moving this chat into `~/Hydra-OS` with the Claude app's own folder change, and opening Home beside it. If a step stops it, it says why in one line and changes nothing.
+- **Hydra-OS's signed catalog, checked first.** It fetches this repo's `catalog.json` and its signature, `catalog.json.sig`, into a folder of its own, and the Mac's own `/usr/bin/openssl` checks the signature against Hydra-OS's public key, written out in the command. Its fingerprint, the sha256 of that key, is `da0ff2dedb55bbcc449d6ffc5e8e881b89f3b7186a680a0a3e2f11183d07193d`, as on the download page.
+- **Hydra-OS itself,** the zip that catalog names for the core, checked against the sha256 the catalog gives, then unpacked with the Mac's own `ditto`. If any of it doesn't check out, it says so in one line and changes nothing.
+- **Hydra-OS's own setup,** `hydra-setup`, from that zip, with this chat's Claude Code. It fetches Hydra-OS's own Python, the build of Astral's python-build-standalone for this Mac's chip, and checks it against the sha256 Astral publishes before it's unpacked. Then it makes `~/Hydra-OS`, readable only by them, installs the plugins there at local scope, so Hydra-OS's hooks and skills are on only in chats in `~/Hydra-OS`, and starts the helpers. It prints its steps, and at its end what comes next: moving this chat into `~/Hydra-OS` with the Claude app's own folder change, opening Home beside it, and a short walkthrough. If a step stops it, it says why in one line and changes nothing.
 
-### If the command doesn't take
-
-The official way, typed by the person: start a new chat in the Code tab with `~/Hydra-OS` as its folder, type these two lines one at a time, choose local scope when asked, then say "Set up Hydra-OS".
-
-```text
-/plugin marketplace add mynamejoi/hydra-os
-/plugin install hydra@hydra-os-get
-```
+Nothing in it uses `git`, Apple's developer tools or the Mac's own `python3`.
 
 ## What's in it
 

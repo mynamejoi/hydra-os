@@ -1,0 +1,430 @@
+{
+  "contract": "column/v1",
+  "id": "goals",
+  "title": "Goals",
+  "kind": "engine",
+  "what": "What you're working toward, with each goal's pace from the app that measures it",
+  "fits": null,
+  "sources": [],
+  "servers_needed": [],
+  "doctor_lines": [],
+  "proofs": [],
+  "guard": null,
+  "owner_only": [],
+  "schedule": {
+    "at": "08:30",
+    "days": "daily",
+    "run": [
+      "scripts/run.py",
+      "--trigger",
+      "schedule"
+    ],
+    "needs_claude": false,
+    "after": "each"
+  },
+  "fresh_within": 26,
+  "signals_in": [],
+  "signals_out": [],
+  "headless": [],
+  "accent": 205,
+  "icon": "target",
+  "home": {
+    "size": "medium",
+    "line": "Everything you're working toward, on one plot.",
+    "needs": "",
+    "via": ""
+  },
+  "tips": [
+    {
+      "id": "goals-start",
+      "block": "header",
+      "text": "Goals are set by telling Claude, in the chat beside this page.",
+      "when": "first-visit"
+    }
+  ],
+  "offers": [],
+  "uses": [],
+  "actions": [
+    {
+      "name": "add",
+      "script": [
+        "scripts/act.py",
+        "add"
+      ],
+      "confirm": "undo",
+      "undo": "undo",
+      "writes": [
+        "store/changes.jsonl"
+      ],
+      "yours": [
+        "goals.json"
+      ],
+      "fields": {
+        "words": {
+          "kind": "words",
+          "max": 120
+        },
+        "app": {
+          "kind": "id",
+          "list": [
+            "scripts/act.py",
+            "ids",
+            "apps"
+          ],
+          "optional": true
+        },
+        "unit": {
+          "kind": "words",
+          "max": 16,
+          "optional": true
+        },
+        "from": {
+          "kind": "number",
+          "min": -1000000000,
+          "max": 1000000000,
+          "optional": true
+        },
+        "on": {
+          "kind": "date",
+          "from": -3660,
+          "to": 366,
+          "optional": true
+        },
+        "target": {
+          "kind": "number",
+          "min": -1000000000,
+          "max": 1000000000,
+          "optional": true
+        },
+        "by": {
+          "kind": "date",
+          "from": 1,
+          "to": 7320,
+          "optional": true
+        },
+        "per": {
+          "kind": "choice",
+          "of": [
+            "day",
+            "week",
+            "month"
+          ],
+          "optional": true
+        }
+      }
+    },
+    {
+      "name": "set",
+      "script": [
+        "scripts/act.py",
+        "set"
+      ],
+      "confirm": "undo",
+      "undo": "undo",
+      "writes": [
+        "store/changes.jsonl"
+      ],
+      "yours": [
+        "goals.json"
+      ],
+      "fields": {
+        "goal": {
+          "kind": "id",
+          "list": [
+            "scripts/act.py",
+            "ids",
+            "goals"
+          ]
+        },
+        "words": {
+          "kind": "words",
+          "max": 80,
+          "optional": true
+        },
+        "unit": {
+          "kind": "words",
+          "max": 16,
+          "optional": true
+        },
+        "target": {
+          "kind": "number",
+          "min": -1000000000,
+          "max": 1000000000,
+          "optional": true
+        },
+        "by": {
+          "kind": "date",
+          "from": 1,
+          "to": 7320,
+          "optional": true
+        },
+        "per": {
+          "kind": "choice",
+          "of": [
+            "day",
+            "week",
+            "month"
+          ],
+          "optional": true
+        }
+      }
+    },
+    {
+      "name": "reword",
+      "script": [
+        "scripts/act.py",
+        "reword"
+      ],
+      "confirm": "undo",
+      "undo": "undo",
+      "writes": [
+        "store/changes.jsonl"
+      ],
+      "yours": [
+        "goals.json"
+      ],
+      "fields": {
+        "goal": {
+          "kind": "id",
+          "list": [
+            "scripts/act.py",
+            "ids",
+            "goals"
+          ]
+        },
+        "words": {
+          "kind": "words",
+          "max": 120
+        }
+      }
+    },
+    {
+      "name": "because",
+      "script": [
+        "scripts/act.py",
+        "because"
+      ],
+      "confirm": "undo",
+      "undo": "undo",
+      "writes": [
+        "store/changes.jsonl"
+      ],
+      "yours": [
+        "goals.json"
+      ],
+      "fields": {
+        "goal": {
+          "kind": "id",
+          "list": [
+            "scripts/act.py",
+            "ids",
+            "goals"
+          ]
+        },
+        "words": {
+          "kind": "words",
+          "max": 120
+        }
+      }
+    },
+    {
+      "name": "measure",
+      "script": [
+        "scripts/act.py",
+        "measure"
+      ],
+      "confirm": "undo",
+      "undo": "undo",
+      "writes": [
+        "store/changes.jsonl"
+      ],
+      "yours": [
+        "goals.json"
+      ],
+      "fields": {
+        "goal": {
+          "kind": "id",
+          "list": [
+            "scripts/act.py",
+            "ids",
+            "goals"
+          ]
+        },
+        "app": {
+          "kind": "id",
+          "list": [
+            "scripts/act.py",
+            "ids",
+            "apps"
+          ]
+        },
+        "unit": {
+          "kind": "choice",
+          "of": [
+            "nights"
+          ],
+          "optional": true
+        }
+      }
+    },
+    {
+      "name": "progress",
+      "script": [
+        "scripts/act.py",
+        "progress"
+      ],
+      "confirm": "undo",
+      "undo": "undo",
+      "writes": [
+        "store/progress.jsonl",
+        "store/changes.jsonl"
+      ],
+      "fields": {
+        "goal": {
+          "kind": "id",
+          "list": [
+            "scripts/act.py",
+            "ids",
+            "by-hand"
+          ]
+        },
+        "value": {
+          "kind": "number",
+          "min": -1000000000,
+          "max": 1000000000
+        },
+        "on": {
+          "kind": "date",
+          "from": -3660,
+          "to": 0,
+          "optional": true
+        }
+      }
+    },
+    {
+      "name": "aside",
+      "script": [
+        "scripts/act.py",
+        "aside"
+      ],
+      "confirm": "undo",
+      "undo": "undo",
+      "writes": [
+        "store/changes.jsonl"
+      ],
+      "yours": [
+        "goals.json"
+      ],
+      "fields": {
+        "goal": {
+          "kind": "id",
+          "list": [
+            "scripts/act.py",
+            "ids",
+            "in-hand"
+          ]
+        }
+      }
+    },
+    {
+      "name": "done",
+      "script": [
+        "scripts/act.py",
+        "done"
+      ],
+      "confirm": "undo",
+      "undo": "undo",
+      "writes": [
+        "store/changes.jsonl"
+      ],
+      "yours": [
+        "goals.json"
+      ],
+      "fields": {
+        "goal": {
+          "kind": "id",
+          "list": [
+            "scripts/act.py",
+            "ids",
+            "in-hand"
+          ]
+        }
+      }
+    },
+    {
+      "name": "back",
+      "script": [
+        "scripts/act.py",
+        "back"
+      ],
+      "confirm": "undo",
+      "undo": "undo",
+      "writes": [
+        "store/changes.jsonl"
+      ],
+      "yours": [
+        "goals.json"
+      ],
+      "fields": {
+        "goal": {
+          "kind": "id",
+          "list": [
+            "scripts/act.py",
+            "ids",
+            "ended"
+          ]
+        }
+      }
+    },
+    {
+      "name": "drop",
+      "script": [
+        "scripts/act.py",
+        "drop"
+      ],
+      "confirm": "undo",
+      "undo": "undo",
+      "writes": [
+        "store/changes.jsonl"
+      ],
+      "yours": [
+        "goals.json"
+      ],
+      "fields": {
+        "goal": {
+          "kind": "id",
+          "list": [
+            "scripts/act.py",
+            "ids",
+            "goals"
+          ]
+        }
+      }
+    },
+    {
+      "name": "undo",
+      "script": [
+        "scripts/act.py",
+        "undo"
+      ],
+      "confirm": "once",
+      "writes": [
+        "store/changes.jsonl",
+        "store/progress.jsonl"
+      ],
+      "yours": [
+        "goals.json"
+      ],
+      "fields": {
+        "change": {
+          "kind": "id",
+          "list": [
+            "scripts/act.py",
+            "ids",
+            "changes"
+          ]
+        }
+      }
+    }
+  ]
+}

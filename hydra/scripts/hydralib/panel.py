@@ -360,7 +360,8 @@ def review(root, now):
 
 
 def answer(root, now):
-    """GET /api/panel: focus, pointer, preview, built, seat, appearance and the morning review's state."""
+    """GET /api/panel: focus, pointer, preview, built, seat, appearance and the morning review's state, and each step a
+    button started (hydralib/work.py) while it works or for 10 minutes after: "update", "helpers", "repair"."""
     f = read_focus(root, now)
     settings = files.read_json(os.path.join(root, "yours", "settings.json"), {})
     appearance = settings.get("appearance") if isinstance(settings, dict) else None
@@ -370,4 +371,12 @@ def answer(root, now):
             "built": built(root),
             "seat": "off",  # kept for readers of an older answer: there's no seat
             "appearance": appearance if appearance in APPEARANCE else "sun",
-            "review": review(root, now)}
+            "review": review(root, now), **_steps(root, now)}
+
+
+def _steps(root, now):
+    from . import work
+    try:
+        return work.shown(root, now)
+    except Exception:  # a broken step file never stops Home's answer
+        return {}

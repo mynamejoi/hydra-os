@@ -133,11 +133,24 @@ def _uid():
     return str(os.getuid())
 
 
+def own_home():
+    """Whether this process's HOME is the account's own home folder. launchctl itself is asked nothing otherwise, so a
+    test with a throwaway HOME never reaches the person's launchd, even if its stand-in's switch is lost on the way."""
+    try:
+        import pwd
+        return os.path.realpath(os.path.expanduser("~")) == os.path.realpath(pwd.getpwuid(os.getuid()).pw_dir)
+    except (KeyError, OSError):
+        return False
+
+
 def load(paths, runner=subprocess.run):
     """Load each written job for the person, only from setup with --jobs. A job of the same label still loaded, as an
     older or broken install can leave one, is booted out first, so its bootstrap never fails on it. Returns the labels
     that loaded."""
     done = []
+    if not own_home():
+        applog.note("launchctl", "this isn't the account's own home, so nothing was loaded")
+        return done
     for path in paths:
         label = os.path.basename(path)[:-len(".plist")]
         if state(label, runner) != "absent":
@@ -255,6 +268,8 @@ def unload(label, runner=subprocess.run):
             f.write("bootout %s\n" % label)
         _stop_test_job(record, label)
         return True
+    if not own_home():
+        return True  # nothing of the person's launchd is touched from a throwaway home
     try:
         r = runner(["/bin/launchctl", "bootout", "gui/%s/%s" % (_uid(), label)], stdin=subprocess.DEVNULL,
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30)
@@ -276,6 +291,8 @@ def state(label, runner=subprocess.run):
         except OSError:
             named = set()
         return "loaded" if label + ".plist" in named else "absent"
+    if not own_home():
+        return "absent"
     try:
         r = runner(["/bin/launchctl", "print", "gui/%s/%s" % (_uid(), label)], capture_output=True, text=True, timeout=10)
     except (OSError, subprocess.TimeoutExpired):

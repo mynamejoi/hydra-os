@@ -17,9 +17,9 @@
       },
       "reads": "Monarch, Robinhood, or a file from your bank. Read only.",
       "needs": "Its morning review uses some of your Claude plan.",
-      "version": "0.22.2",
-      "pack": "finance-0.22.2.pack",
-      "sha256": "54590f0bc61e8d2f3853271a274b1e6d86a3d101626731faf1307eaf687d3660",
+      "version": "0.23.2",
+      "pack": "finance-0.23.2.pack",
+      "sha256": "c66f657cb46639e70306b33c8e9cf473c68256829c6281f9b60e2c9e3d1ae935",
       "checkout": "",
       "price": "",
       "min_hydra": "0.1.0"
@@ -41,9 +41,9 @@
       },
       "reads": "Gmail and Google Calendar: who and when, never the message. Or a file you drop. Read only.",
       "needs": "Its morning review uses some of your Claude plan.",
-      "version": "1.1.2",
-      "pack": "network-1.1.2.pack",
-      "sha256": "4829dacf8b6958051e18e4788771e508f3c9cd6c0aa148b131b4bc925f6934ba",
+      "version": "1.2.2",
+      "pack": "network-1.2.2.pack",
+      "sha256": "9af4750f4cb8f7d49cec0be13346fe95c115a0e0dd4de56fa7643efa428eff74",
       "checkout": "",
       "price": "",
       "min_hydra": "1.0.0"
@@ -58,9 +58,9 @@
       "fits": null,
       "reads": "The web through Claude's own search, in general words only. Public release notes. Notes you drop in. Read only.",
       "needs": "Its Monday review uses some of your Claude plan.",
-      "version": "1.0.4",
-      "pack": "learning-1.0.4.pack",
-      "sha256": "dc3799448bfb0be7f335c13d2d206516d686c85c9da5bc0448e14ba2ef460000",
+      "version": "1.1.0",
+      "pack": "learning-1.1.0.pack",
+      "sha256": "d1b5c5495740f19614c02de561cae7a89b8ee7ffc16bf433f6e966b85be4e19f",
       "checkout": "",
       "price": "",
       "min_hydra": "1.0.0"
@@ -81,9 +81,9 @@
       },
       "reads": "Gmail and Google Calendar: who, when and the subject, never the message. Read only. It sends nothing.",
       "needs": "Its morning review uses some of your Claude plan.",
-      "version": "1.0.4",
-      "pack": "inbox-1.0.4.pack",
-      "sha256": "f701470f21177192a7dd02f0392d35aa91c414e9e50fe0913d0c7d9b786960d8",
+      "version": "1.0.8",
+      "pack": "inbox-1.0.8.pack",
+      "sha256": "571e65476817ccef6af8f81f7dca34ae0325e0b6d6f75d830a05771e8add4561",
       "checkout": "",
       "price": "",
       "min_hydra": "1.0.0"
@@ -106,9 +106,9 @@
       },
       "reads": "A file you export from YouTube Studio. It never signs in to YouTube.",
       "needs": "Its morning review uses some of your Claude plan.",
-      "version": "1.2.1",
-      "pack": "content-1.2.1.pack",
-      "sha256": "fe35cc95561ca1bc93726f1d4823d0330cfb7cb83263729bac4dd29b2919b1f1",
+      "version": "1.3.1",
+      "pack": "content-1.3.1.pack",
+      "sha256": "843eb5dc5fa19ba13becbcc81fa9f37ffec5d26dd5c1fda24aa24bef57640944",
       "checkout": "",
       "price": "",
       "min_hydra": "1.0.0"
@@ -116,13 +116,15 @@
   ],
   "foot": "Paid once, updates included. Works with your own Claude plan.",
   "core": {
-    "version": "1.0.2",
-    "zip": "hydra-1.0.2.zip",
-    "sha256": "4a2c3343ed80728b680910b832ff25a7e9afb923d6a67713e6a5493500521b25",
+    "version": "1.1.0",
+    "zip": "hydra-1.1.0.zip",
+    "sha256": "0a4c519cdaacf491bdc808c3068672a4254f34b9d43c9f48ddb8b8afc0c4aef0",
     "notes": [
-      "Buttons instead of phrases. Set up, Update, Repair and Remove are buttons now, and Claude takes it from there.",
-      "It mends itself. Each chat clears what an older Hydra-OS left, and puts the helpers right after a Mac update.",
-      "What's new first. Before an update, Claude tells you what it brings, then asks you."
+      "Only the Claude app. Hydra-OS brings its own Python, checked before it's used. No Apple developer tools.",
+      "A walkthrough to start. Setup ends with a short tour in the chat, then asks what you're working toward.",
+      "On from the start. The helpers and a short morning review start with setup. Turn either off in Help.",
+      "Buttons do it themselves. Update, Repair, Remove and the helpers' switch run right on the page.",
+      "Health data, a step at a time. Claude walks you through your iPhone's export, or logs your workouts."
     ]
   }
 }
