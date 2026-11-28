@@ -15,10 +15,12 @@ step after the backup fails.
      one the new core's scripts/python.pins names for this chip, fetched, checked by its sha256 before the Mac's own
      tar unpacks it, started once, and kept in <root>/hydra/python/<its name>/; then config.json, hydra/bin/python3 and
      the hydra command name it. A home already on its own Python keeps it.
-  9. Each free page the new release carries that this home lacks, as Research came free in 1.2.0, added as setup adds
-     it: copied into the store, listed, installed at local scope through the same Claude Code, its folder made and its
-     page drawn. Best effort and asking nothing: a page already here, bought or free, is left as it is, nothing is
-     removed, and a page that doesn't go in is left out without undoing the update.
+  9. The new release's free pages (hydralib/freepages.py): each one this home lacks, as Research came free in 1.2.0,
+     added as setup adds it, and each one it has at an older version brought up to the release's. Best effort and
+     asking nothing: a page bought from the Shop is left as it is, nothing is removed, and a page that doesn't go in is
+     left as it was without undoing the update. An older core's update, which has no such step, gets the same from the
+     new core's migrate.py, which it runs; this one tells migrate.py (HYDRA_FREE_PAGES=update) to leave them to step 9,
+     which takes them out or puts them back if a later step fails.
  10. Home's server and the tick started again from the new core, and Home answering again.
 Any failure from 4 on puts everything back: the backup restored, the new store folder taken away, Claude Code's copy
 back at the old version (plugin update again, else uninstall and install), the Python it kept taken away, the jobs
@@ -149,6 +151,8 @@ class Update:
         self.target = None  # the store folder this update made
         self.old = None  # the core in use, {"version", "root"}
         self.added = []  # the free pages this update added: [name], taken out again if a later step fails
+        self.upgraded = []  # the free pages it brought up to the release's version, put back if a later step fails
+        self.free_made = []  # the folders step 9 made: an added page's own, an upgraded page's new version in the store
         self.python_made = None  # the Python this update kept in <root>/hydra/python/, for a home it moved onto it
         self.python_was = None  # the Python config.json named before
 
@@ -202,7 +206,8 @@ class Update:
         script = os.path.join(staged, "scripts", "migrate.py")
         if os.path.isfile(script):
             r = subprocess.run([self.config["python"], "-B", "-s", script, "--root", self.root], cwd=staged,
-                               env=cfg.run_env(self.config), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                               env=dict(cfg.run_env(self.config), HYDRA_FREE_PAGES="update"),  # step 9 brings them
+                               stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                stderr=subprocess.DEVNULL, timeout=300)
             said = r.stdout.decode("utf-8", "replace").strip().splitlines()
             applog.note("update", "migrate: %s" % (said[0] if said else "no line"))
@@ -251,49 +256,24 @@ class Update:
             files.write_text(path, setup_script.COMMAND % {"root": json.dumps(self.root), "fallback": json.dumps(main_root)})
 
     def free_pages(self, staged):
-        """Each free page the new release lists that the store's list lacks, added as setup adds it, best effort."""
-        from . import pages
-        release = os.path.join(staged, "release")
-        listed = files.read_json(os.path.join(release, ".claude-plugin", "marketplace.json"), {})
-        market_path = os.path.join(self.root, "hydra", "store", ".claude-plugin", "marketplace.json")
-        market = files.read_json(market_path, {})
-        have = {e.get("name") for e in (market.get("plugins") or []) if isinstance(e, dict)}
-        for e in (listed.get("plugins") or []) if isinstance(listed, dict) else []:
-            name = e.get("name") if isinstance(e, dict) else None
-            if not isinstance(name, str) or name == registry.MAIN or name in have or not isinstance(e.get("source"), str):
-                continue
-            src = os.path.realpath(os.path.join(release, e["source"]))
-            rel = os.path.relpath(src, os.path.realpath(release))
-            target = os.path.join(self.root, "hydra", "store", rel)
-            if rel.startswith("..") or not os.path.isfile(os.path.join(src, ".claude-plugin", "plugin.json")):
-                continue
-            try:
-                if os.path.lexists(target):
-                    shutil.rmtree(target)
-                shutil.copytree(src, target, symlinks=True)
-                market = files.read_json(market_path, {})
-                market["plugins"] = list(market.get("plugins") or []) + [
-                    {"name": name, "source": "./" + rel, "version": str(e.get("version") or ""),
-                     **({"description": e["description"]} if isinstance(e.get("description"), str) else {})}]
-                files.write_json(market_path, market)
-                self.claude(["plugin", "marketplace", "update", cfg.STORE], timeout=120)
-                code, _ = self.claude(["plugin", "install", "%s@%s" % (name, cfg.STORE), "--scope", "local"])
-                if code != 0:
-                    raise OSError("Claude Code didn't install %s" % name)
-                self.added.append(name)
-            except (OSError, ValueError) as err:
-                applog.note("update", "%s left out: %s" % (name, err))
-                self.take_out(name, rel)
-        if self.added:
-            registry.build(self.config, env=self.env)
-            for name in self.added:
-                entry = registry.app(self.root, name) or {}
-                try:
-                    files.folder(entry["record"])
-                    pages.app(self.config, name, force=True)
-                except (OSError, ValueError, KeyError) as err:
-                    applog.note("update", "%s's first page: %s" % (name, err))
-            applog.note("update", "free pages added: %s" % ", ".join(self.added))
+        """Each free page the new release carries, added where the home lacks it and brought up to the release's
+        version where the home has an older one (hydralib/freepages.py), best effort; a page bought from the Shop is
+        left as it is, and nothing is removed."""
+        from . import freepages
+        had, before = set(os.listdir(self.root)), self.listed()
+        for name, how, _version in freepages.bring(self.config, os.path.join(staged, "release"), self.chat, self.env):
+            (self.added if how == "added" else self.upgraded).append(name)
+            source = self.listed().get(name)
+            if how == "added" and name not in had and shop.ID.fullmatch(name):
+                self.free_made.append(os.path.join(self.root, name))
+            elif how == "upgraded" and isinstance(source, str) and source != before.get(name):
+                self.free_made.append(os.path.normpath(os.path.join(self.root, "hydra", "store", source)))
+
+    def listed(self):
+        """The store's list as {name: source}."""
+        doc = files.read_json(os.path.join(self.root, "hydra", "store", ".claude-plugin", "marketplace.json"), {})
+        return {e.get("name"): e.get("source") for e in (doc.get("plugins") or []) if isinstance(e, dict)} \
+            if isinstance(doc, dict) else {}
 
     def take_out(self, name, rel=None):
         """A free page this update added, out again: the store's list, its copy and Claude Code's install."""
@@ -429,6 +409,14 @@ class Update:
         for name in self.added:  # the free pages it added, out again, before the backup puts the store's list back
             self.take_out(name)
         self.restore()
+        if self.upgraded:  # the backup's store list names their older versions again, still in the store
+            self.claude(["plugin", "marketplace", "update", cfg.STORE], timeout=120)
+            for name in self.upgraded:
+                self.claude(["plugin", "update", "%s@%s" % (name, cfg.STORE), "--scope", "local"])
+        store = os.path.join(self.root, "hydra", "store") + os.sep
+        for path in self.free_made:  # what step 9 made, nothing the home had before
+            if os.path.dirname(path) == self.root or path.startswith(store):
+                shutil.rmtree(path, ignore_errors=True)
         if self.python_made:  # the Mac's own python3 again, as config.json names it once more
             self.config = dict(self.config, python=self.python_was)
             shutil.rmtree(self.python_made, ignore_errors=True)

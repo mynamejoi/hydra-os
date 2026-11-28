@@ -130,14 +130,13 @@
   ],
   "foot": "Paid once, updates included. Works with your own Claude plan.",
   "core": {
-    "version": "1.2.0",
-    "zip": "hydra-1.2.0.zip",
-    "sha256": "89d732eadb019378a433c2cb31656663a079da665eb0a96883c576c51fa51a9f",
+    "version": "1.2.1",
+    "zip": "hydra-1.2.1.zip",
+    "sha256": "daa44e4ac87dff0742182fd572039607285208d34f744b4da0735d72f4aa42d4",
     "notes": [
-      "Research comes with it, free. It looks into your goals overnight, and what it finds shows on Home.",
+      "Every page that comes with it. Updating from an older Hydra-OS brings Research and the newest Goals too.",
       "A check-in each day. Claude asks how one goal is going, and your answer updates it, with Undo.",
-      "A bit more on Mondays. Research joins the morning review, which uses a bit more of your Claude plan on Mondays.",
-      "Wellbeing in the Shop. Wellbeing is a page you can add now. If you already have it, it stays as it is."
+      "A bit more on Mondays. Research joins the morning review, which uses a bit more of your Claude plan on Mondays."
     ]
   }
 }

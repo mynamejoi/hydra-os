@@ -2,6 +2,12 @@
 
 Each version's notes, newest first. Home's What's new shows a version's first three lines once, after an update.
 
+## 1.2.1
+
+- **Every page that comes with it.** Updating from an older Hydra-OS brings Research and the newest Goals too.
+- **A check-in each day.** Claude asks how one goal is going, and your answer updates it, with Undo.
+- **A bit more on Mondays.** Research joins the morning review, which uses a bit more of your Claude plan on Mondays.
+
 ## 1.2.0
 
 - **Research comes with it, free.** It looks into your goals overnight, and what it finds shows on Home.

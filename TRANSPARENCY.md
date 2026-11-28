@@ -1,6 +1,6 @@
 # What Hydra-OS installs
 
-Everything Hydra-OS puts on your Mac, everything it runs, every address it reaches, and how to remove it. This is Hydra-OS 1.2.0.
+Everything Hydra-OS puts on your Mac, everything it runs, every address it reaches, and how to remove it. This is Hydra-OS 1.2.1.
 
 ## The folder
 

@@ -11,10 +11,17 @@ everything back when it exits 2.
 - --check moves nothing and says what would move.
 
 1.0.0 is every file's first version, so there are no steps yet. It prints one line, counts only, and exits 0, or 2
-with why. Python 3.9 standard library only."""
+with why.
+
+Then, run by an update with no free-pages step of its own (not --check, and no HYDRA_FREE_PAGES=update, which an
+update that brings them itself sets), the free pages of the release beside it, this core's release/
+(hydralib/freepages.py): each one the home lacks added, each one it has at an older version brought up to it, a page
+bought from the Shop left as it is and nothing removed, best effort, so a home on an older core, whose update has no
+such step, gets them too. Python 3.9 standard library only."""
 import argparse
 import os
 import sys
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from hydralib import files  # noqa: E402
@@ -26,6 +33,7 @@ FILES = {  # each file, relative to <root>: its contract's name and the version 
     os.path.join("yours", "layouts", "home.json"): ("yours", 1),
     os.path.join("hydra", "shop", "bought.json"): ("bought", 1),
 }
+FREE_WAIT = 180  # seconds from the start for the free pages: an older update gives its migrate 300
 STEPS = {}  # {(contract name, from version): a function from that version's document to the next one's}; none at 1.0.0
 
 
@@ -82,6 +90,7 @@ def line(moves, newer, check=False):
 
 
 def main(argv=None):
+    started = time.monotonic()
     ap = argparse.ArgumentParser(description="Move Hydra-OS's own files to this version")
     ap.add_argument("--root", required=True)
     ap.add_argument("--check", action="store_true", help="move nothing, and say what would move")
@@ -95,7 +104,27 @@ def main(argv=None):
         print("Hydra-OS's files couldn't be moved.")
         return 2
     print(line(moves, newer, args.check))
+    if not args.check and os.environ.get("HYDRA_FREE_PAGES") != "update":  # an update with no free-pages step of its own
+        free_pages(os.path.abspath(args.root), started + FREE_WAIT)
     return 0
+
+
+def free_pages(root, deadline):
+    """The release beside this core's scripts/, best effort and inside the deadline: whatever happens, the update
+    goes on."""
+    release = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "release")
+    if not os.path.isfile(os.path.join(release, ".claude-plugin", "marketplace.json")):
+        return
+    try:
+        from hydralib import applog, claude as cl, config as cfg, freepages
+        applog.use(root)  # what it does in the core's own log, as the update's other steps are
+        config = cfg.load(root)
+        done = freepages.bring(config, release, cl.step_claude(config), deadline=deadline)
+    except Exception as e:  # noqa: BLE001 (a free page never stops an update)
+        print("Free pages: %s." % type(e).__name__)
+        return
+    if done:
+        print("Free pages: %s." % ", ".join("%s %s" % (name, how) for name, how, _v in done))
 
 
 if __name__ == "__main__":
