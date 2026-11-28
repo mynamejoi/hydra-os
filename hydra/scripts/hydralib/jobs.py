@@ -143,14 +143,25 @@ def own_home():
         return False
 
 
-def load(paths, runner=subprocess.run):
+def _kept_from_launchd(runner):
+    """Whether launchd itself must be asked nothing: from a throwaway home, or, with launchctl itself to run (no runner
+    given), under any test switch without launchctl's stand-in (untouchable), so a test never reaches the person's own
+    os.hydra.home or os.hydra.tick, even from their own home. A runner given is a test's own, and asks only it."""
+    return not own_home() or (runner is None and untouchable())
+
+
+def load(paths, runner=None):
     """Load each written job for the person, only from setup with --jobs. A job of the same label still loaded, as an
     older or broken install can leave one, is booted out first, so its bootstrap never fails on it. Returns the labels
     that loaded."""
     done = []
-    if not own_home():
-        applog.note("launchctl", "this isn't the account's own home, so nothing was loaded")
+    record = os.environ.get("HYDRA_TEST_LAUNCHCTL")
+    if record and runner is None:  # for tests only: launchctl's stand-in, whoever calls, so no caller can miss it
+        return test_load(record, os.path.expanduser("~"))(paths)
+    if _kept_from_launchd(runner):
+        applog.note("launchctl", "this isn't the account's own launchd to change, so nothing was loaded")
         return done
+    runner = runner or subprocess.run
     for path in paths:
         label = os.path.basename(path)[:-len(".plist")]
         if state(label, runner) != "absent":
@@ -258,7 +269,7 @@ def _stop_test_job(record, label):
             pass
 
 
-def unload(label, runner=subprocess.run):
+def unload(label, runner=None):
     """Stop the person's own job, `launchctl bootout gui/<uid>/<label>`, which needs no administrator. True when it
     stopped, or wasn't loaded. HYDRA_TEST_LAUNCHCTL, for tests only: "bootout <label>" is added to its record and
     nothing is run."""
@@ -268,8 +279,9 @@ def unload(label, runner=subprocess.run):
             f.write("bootout %s\n" % label)
         _stop_test_job(record, label)
         return True
-    if not own_home():
-        return True  # nothing of the person's launchd is touched from a throwaway home
+    if _kept_from_launchd(runner):
+        return True  # nothing of the person's launchd is touched from a throwaway home or a test
+    runner = runner or subprocess.run
     try:
         r = runner(["/bin/launchctl", "bootout", "gui/%s/%s" % (_uid(), label)], stdin=subprocess.DEVNULL,
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=30)
@@ -280,7 +292,7 @@ def unload(label, runner=subprocess.run):
     return r.returncode in (0, 3, 113)  # 3 and 113: no such job loaded
 
 
-def state(label, runner=subprocess.run):
+def state(label, runner=None):
     """"running" while the job runs, "loaded" when it's loaded and not running, "absent" when it isn't loaded. Under
     HYDRA_TEST_LAUNCHCTL, for tests only, launchd isn't asked: a job its record names is "loaded", any other "absent"."""
     record = os.environ.get("HYDRA_TEST_LAUNCHCTL")
@@ -291,8 +303,9 @@ def state(label, runner=subprocess.run):
         except OSError:
             named = set()
         return "loaded" if label + ".plist" in named else "absent"
-    if not own_home():
+    if _kept_from_launchd(runner):
         return "absent"
+    runner = runner or subprocess.run
     try:
         r = runner(["/bin/launchctl", "print", "gui/%s/%s" % (_uid(), label)], capture_output=True, text=True, timeout=10)
     except (OSError, subprocess.TimeoutExpired):

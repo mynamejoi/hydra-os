@@ -58,6 +58,10 @@ def main():
             step = context.step_now(root, session=str(event.get("session_id") or "")) if root else ""
         except Exception:
             step = ""
+        try:  # the day's check-in, once the first session is done (Goals' open question for today)
+            check = context.checkin_now(root, session=str(event.get("session_id") or "")) if root and not step else ""
+        except Exception:
+            check = ""
         try:  # what ran or changed since their last message
             news = context.since(root) if root else ""
         except Exception:
@@ -66,7 +70,7 @@ def main():
             taps = context.taps(root) if root and block else ""
         except Exception:
             taps = ""
-        block = "\n".join(t for t in (step, news, block, taps) if t)
+        block = "\n".join(t for t in (step, check, news, block, taps) if t)
     if block:
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": block}}))
     return 0

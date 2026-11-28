@@ -2,6 +2,21 @@
 
 Each version's notes, newest first. Home's What's new shows a version's first three lines once, after an update.
 
+## 1.2.0
+
+- **Research comes with it, free.** It looks into your goals overnight, and what it finds shows on Home.
+- **A check-in each day.** Claude asks how one goal is going, and your answer updates it, with Undo.
+- **A bit more on Mondays.** Research joins the morning review, which uses a bit more of your Claude plan on Mondays.
+- **Wellbeing in the Shop.** Wellbeing is a page you can add now. If you already have it, it stays as it is.
+
+## 1.1.1
+
+- **Goals fill their space.** One to three goals share the band, and the room left over says how to add the next.
+- **Quiet spots say what goes there.** Where no page has a question yet, it says one will ask there, answered in a line.
+- **Its own Python, on update.** If Hydra-OS ran on the Mac's own Python, this update moves it onto its own.
+- **Help on Apple's tools.** If your Mac offers Apple's developer tools, choose Not Now. Hydra-OS doesn't need them.
+- **What it set up, said at the end.** Setup's last lines say what's in place, and its log now stays inside ~/Hydra-OS.
+
 ## 1.1.0
 
 - **Only the Claude app.** Hydra-OS brings its own Python, checked before it's used. No Apple developer tools.

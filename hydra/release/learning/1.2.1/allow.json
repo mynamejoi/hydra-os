@@ -1,0 +1,17 @@
+{
+ "about": "Research's lock for public release notes: the only addresses scripts/release.py may read, each with a plain GET, no cookie, no sign-in and nothing of the person's. The client reads this file before every request and refuses any address not listed here, and any redirect off its own site. This file can narrow the client's ceiling of sites, never widen it.",
+ "sources": [
+  {"id": "claude-code", "name": "Claude Code's release notes", "kind": "text",
+   "url": "https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md",
+   "link": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md"},
+  {"id": "claude-api", "name": "The Claude API's release notes", "kind": "html",
+   "url": "https://platform.claude.com/docs/en/release-notes/overview",
+   "link": "https://platform.claude.com/docs/en/release-notes/overview"},
+  {"id": "claude-apps", "name": "The Claude app's release notes", "kind": "html",
+   "url": "https://support.claude.com/en/articles/12138966-release-notes",
+   "link": "https://support.claude.com/en/articles/12138966-release-notes"},
+  {"id": "plugins", "name": "The official plugin marketplace", "kind": "marketplace",
+   "url": "https://raw.githubusercontent.com/anthropics/claude-plugins-official/main/.claude-plugin/marketplace.json",
+   "link": "https://github.com/anthropics/claude-plugins-official"}
+ ]
+}

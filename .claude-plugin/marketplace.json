@@ -8,7 +8,7 @@
     {
       "name": "hydra",
       "source": "./hydra",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "Hydra-OS itself: it sets up your Hydra-OS folder, serves Home and each of your pages, and starts each page's daily read"
     }
   ]

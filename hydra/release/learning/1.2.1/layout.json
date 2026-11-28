@@ -1,0 +1,14 @@
+{
+ "contract": "layout/v1",
+ "blocks": [
+  {"id": "header", "type": "header", "width": "full", "fixed": true},
+  {"id": "goals", "type": "goals", "width": "full", "fixed": true},
+  {"id": "week", "type": "list", "width": "full", "title": "This week", "data": "week"},
+  {"id": "projects", "type": "table", "width": "full", "title": "Your projects", "data": "projects", "entry": "add-project"},
+  {"id": "sell", "type": "table", "width": "full", "title": "How to sell it", "data": "sell"},
+  {"id": "releases", "type": "list", "width": "half", "title": "What changed in Claude's tools", "data": "releases"},
+  {"id": "notes", "type": "list", "width": "half", "title": "Your notes", "data": "notes"},
+  {"id": "questions", "type": "questions", "width": "full", "fixed": true},
+  {"id": "connections", "type": "connections", "width": "full", "fixed": true}
+ ]
+}

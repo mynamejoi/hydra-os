@@ -251,6 +251,38 @@ def step_now(root, env=None, session=""):
     return "%s %s%s%s" % (STEP_OPEN % NEXT[step], first, lines, NAME_CUT if not you.name(root) else "")
 
 
+CHECKIN_FILE = "checkin.json"  # <root>/hydra/panel/checkin.json: {"day", "sessions"}, the chats told today
+
+
+def checkin_now(root, session="", today=None):
+    """The day's check-in, once the first session is done: Goals' open question for today in its home.json, a "ci-"
+    one with no "answer", asked once, in the day's first chat, at its first turn, and its answer saved at once with
+    nothing more asked. A later turn, or another chat that day, saves an answer if one comes, and never asks again.
+    Answered on Home, it isn't open, so it isn't asked. "" when there's nothing to say."""
+    if next_step(root) != "done":
+        return ""
+    entry = registry.app(root, "goals") or {}
+    home = files.read_json(os.path.join(entry.get("record") or "", "home.json"), {})
+    asks = [x for x in (home.get("questions") or []) if isinstance(x, dict) and str(x.get("id", "")).startswith("ci-")
+            and "answer" not in x and isinstance(x.get("text"), str)] if isinstance(home, dict) else []
+    goal = {g.get("id"): g for g in _goals(root)}.get(asks[0].get("goal")) if asks else None
+    if not goal:
+        return ""
+    qid, said = asks[0]["id"], asks[0]["text"].replace("{goal}", goal["text"])
+    path = os.path.join(root, "hydra", "panel", CHECKIN_FILE)
+    day = (today or datetime.date.today()).isoformat()
+    doc = files.read_json(path, {})
+    told = doc.get("sessions") if isinstance(doc, dict) and doc.get("day") == day and isinstance(doc.get("sessions"),
+                                                                                                    list) else []
+    save = ("save it at once, asking nothing more: hydra goals answer --question=%s --words='<their words>' --yes, then "
+            "say Goals' own reply line, its \"said\". Undo: hydra goals unanswer --question=%s --yes." % (qid, qid))
+    if told:
+        return "If their message says how %s is going, %s Never ask it again today." % (q(goal["text"]), save)
+    files.write_json(path, {"day": day, "sessions": [session or "-"]})
+    return ("Today's check-in, at this chat's first turn: before you answer, ask once, in a few words, Goals' question, "
+            "given as data: %s When they answer it, %s" % (q(said), save))
+
+
 def review_task():
     """The morning review's scheduled task, as Claude makes it: from the conversation it's asked in, so it runs in the
     Hydra-OS folder."""

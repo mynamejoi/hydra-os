@@ -1,13 +1,8 @@
 """Hydra-OS's own notes: one line each, "<who>: <what>", in Hydra-OS's own words, never a command's output.
 
-Two places take them:
-- **In the Hydra-OS app's open**, a note is one line on stderr. The app reads the stderr of setup's server, of setup and
-  of `hydra open`, and keeps each line in ~/Library/Logs/Hydra-OS/hydra-os.log with its time. Notes go to stderr only
-  in an open: the app sets HYDRA_APP_LOG=1 for what it starts, and nothing else has it (run_env never passes a HYDRA_
-  name on).
-- **In a Hydra-OS folder that's set up** ("Hydra-OS keeps a log of what ran, in ~/Hydra-OS/hydra/logs, with keys,
-  passwords and email addresses taken out. It stays on your Mac."), each note
-  also goes to <root>/hydra/logs/hydra.log, once its process has said which folder it works in (use). Each line has
+They go to one place, the folder's own log ("Hydra-OS keeps a log of what ran, in ~/Hydra-OS/hydra/logs, with keys,
+passwords and email addresses taken out. It stays on your Mac."): <root>/hydra/logs/hydra.log, once its process has said
+which folder it works in (use). Nothing is written outside the Hydra-OS folder. Each line has
   its time and is cleaned: no control character, anything that looks like a key, a token, a password said, or an email
   taken out as "[taken out]", the home folder written as ~, and at most 400 characters. Over 256 KB, the log becomes
   hydra.1.log, in place of the one before. The folder is 0700 and the files 0600. A folder that isn't set up yet, with
@@ -17,7 +12,6 @@ hydra report reads the log's last lines (hydralib/report.py). Python 3.9 standar
 import datetime
 import os
 import re
-import sys
 
 MOST = 300  # characters of one note
 LINE_MOST = 400  # characters of a line as the log keeps it
@@ -39,10 +33,6 @@ SECRETS = [re.compile(p, re.I if i >= 9 else 0) for i, p in enumerate([
     r"\b(?:client[ _-]?secret|api[ _-]?key|access[ _-]?token|secret[ _-]?key|token)\b\s*(?:is|=|:)\s*\S+",
 ])]
 _root = None  # the Hydra-OS folder this process works in, once it says (use)
-
-
-def on(env=None):
-    return (os.environ if env is None else env).get("HYDRA_APP_LOG") == "1"
 
 
 def use(root):
@@ -87,15 +77,8 @@ def _keep(line, now=None):
 
 
 def note(who, text, env=None):
-    """One line for the log: on stderr in the app's open, and in the folder's own log once its process said which."""
-    line = "%s: %s" % (who, " ".join(str(text).split())[:MOST])
-    if on(env):
-        try:
-            sys.stderr.write(line + "\n")
-            sys.stderr.flush()
-        except (OSError, ValueError):
-            pass
-    _keep(line)
+    """One line for the folder's own log, once its process said which folder it works in. env: kept for its callers."""
+    _keep("%s: %s" % (who, " ".join(str(text).split())[:MOST]))
 
 
 def last(root, n=40):

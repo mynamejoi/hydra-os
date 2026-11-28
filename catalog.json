@@ -2,6 +2,37 @@
   "contract": "catalog/v1",
   "pages": [
     {
+      "id": "health",
+      "title": "Wellbeing",
+      "icon": "heart",
+      "accent": 159,
+      "does": "Shows your sleep, bedtime, resting heart and workouts, each against your own usual.",
+      "for_goal": "Counts '{goal}' for you, from your iPhone's Health data.",
+      "fits": {
+        "units": [
+          "swims",
+          "runs",
+          "rides",
+          "walks",
+          "lifts",
+          "yogas",
+          "rows",
+          "workouts",
+          "nights"
+        ],
+        "script": "scripts/goals.py",
+        "what": "swims, runs, rides, walks, workouts and nights of sleep from your iPhone's Health data"
+      },
+      "reads": "Your iPhone's Health export, or a file of days. Read only.",
+      "needs": "Your iPhone's Health export, about ten minutes with Claude walking you through it. Its morning review uses some of your Claude plan.",
+      "version": "1.1.1",
+      "pack": "health-1.1.1.pack",
+      "sha256": "8c78aa5708c7e4024fc9c176d7eac1c08c9cf08242e6ed4652e47d5fc0c755f2",
+      "checkout": "",
+      "price": "",
+      "min_hydra": "1.2.0"
+    },
+    {
       "id": "finance",
       "title": "Finance",
       "icon": "wallet",
@@ -44,23 +75,6 @@
       "version": "1.2.2",
       "pack": "network-1.2.2.pack",
       "sha256": "9af4750f4cb8f7d49cec0be13346fe95c115a0e0dd4de56fa7643efa428eff74",
-      "checkout": "",
-      "price": "",
-      "min_hydra": "1.0.0"
-    },
-    {
-      "id": "learning",
-      "title": "Research",
-      "icon": "scope",
-      "accent": 300,
-      "does": "A weekly scout for what you're working on: what's new, what you're missing, how to sell it.",
-      "for_goal": "",
-      "fits": null,
-      "reads": "The web through Claude's own search, in general words only. Public release notes. Notes you drop in. Read only.",
-      "needs": "Its Monday review uses some of your Claude plan.",
-      "version": "1.1.0",
-      "pack": "learning-1.1.0.pack",
-      "sha256": "d1b5c5495740f19614c02de561cae7a89b8ee7ffc16bf433f6e966b85be4e19f",
       "checkout": "",
       "price": "",
       "min_hydra": "1.0.0"
@@ -116,15 +130,14 @@
   ],
   "foot": "Paid once, updates included. Works with your own Claude plan.",
   "core": {
-    "version": "1.1.0",
-    "zip": "hydra-1.1.0.zip",
-    "sha256": "0a4c519cdaacf491bdc808c3068672a4254f34b9d43c9f48ddb8b8afc0c4aef0",
+    "version": "1.2.0",
+    "zip": "hydra-1.2.0.zip",
+    "sha256": "89d732eadb019378a433c2cb31656663a079da665eb0a96883c576c51fa51a9f",
     "notes": [
-      "Only the Claude app. Hydra-OS brings its own Python, checked before it's used. No Apple developer tools.",
-      "A walkthrough to start. Setup ends with a short tour in the chat, then asks what you're working toward.",
-      "On from the start. The helpers and a short morning review start with setup. Turn either off in Help.",
-      "Buttons do it themselves. Update, Repair, Remove and the helpers' switch run right on the page.",
-      "Health data, a step at a time. Claude walks you through your iPhone's export, or logs your workouts."
+      "Research comes with it, free. It looks into your goals overnight, and what it finds shows on Home.",
+      "A check-in each day. Claude asks how one goal is going, and your answer updates it, with Undo.",
+      "A bit more on Mondays. Research joins the morning review, which uses a bit more of your Claude plan on Mondays.",
+      "Wellbeing in the Shop. Wellbeing is a page you can add now. If you already have it, it stays as it is."
     ]
   }
 }

@@ -11,13 +11,22 @@ step after the backup fails.
   6. the store: the new core, without its release/, as store/hydra/<version>/, and the store's list naming it.
   7. Claude Code's copy, through the Claude Code that runs the chat: plugin marketplace update, then plugin update
      hydra@hydra-os at local scope. The registry built again names the new core, and the hydra command runs it.
-  8. Home's server and the tick started again from the new core, and Home answering again.
+  8. Hydra-OS's own Python, for a home that still runs on the Mac's own python3, as an older Hydra-OS set it up: the
+     one the new core's scripts/python.pins names for this chip, fetched, checked by its sha256 before the Mac's own
+     tar unpacks it, started once, and kept in <root>/hydra/python/<its name>/; then config.json, hydra/bin/python3 and
+     the hydra command name it. A home already on its own Python keeps it.
+  9. Each free page the new release carries that this home lacks, as Research came free in 1.2.0, added as setup adds
+     it: copied into the store, listed, installed at local scope through the same Claude Code, its folder made and its
+     page drawn. Best effort and asking nothing: a page already here, bought or free, is left as it is, nothing is
+     removed, and a page that doesn't go in is left out without undoing the update.
+ 10. Home's server and the tick started again from the new core, and Home answering again.
 Any failure from 4 on puts everything back: the backup restored, the new store folder taken away, Claude Code's copy
-back at the old version (plugin update again, else uninstall and install), the jobs from the old core again: FAILED.
+back at the old version (plugin update again, else uninstall and install), the Python it kept taken away, the jobs
+from the old core again: FAILED.
 One version is kept back in the store, and the last two backups.
 
 HYDRA_TEST_UPDATE_FAIL=<step>, for tests only, stops the update at the end of that step (backup, migrate, store,
-claude, registry, jobs or server), as Checks plants a failure at each one.
+claude, registry, python, jobs or server), as Checks plants a failure at each one.
 
   core(config, env=None, now=None, load=None)    the lines hydra update says for Hydra-OS itself
 """
@@ -25,12 +34,15 @@ import datetime
 import http.client
 import json
 import os
+import platform
+import shlex
 import shutil
 import subprocess
 import time
+import urllib.parse
 import zipfile
 
-from . import applog, backup, files, jobs, registry, review_fence, runs, shop, space
+from . import applog, backup, files, jobs, registry, review_fence, runs, shop, space, tools
 from . import claude as cl
 from . import config as cfg
 from . import release as builds
@@ -54,8 +66,10 @@ KEEP = 2  # versions of the core kept in the store: the one in use and the one b
 SERVER_WAIT = 30.0
 BUSY_WAIT = 30  # seconds hydra update waits for a run or a review to end before it says BUSY;
 # HYDRA_TEST_BUSY_WAIT, for tests only, sets another
-STEPS = ("backup", "migrate", "store", "claude", "registry", "jobs", "server")
-EXTRA = (os.path.join("hydra", "bin", ".hydra.py"), os.path.join("hydra", "setup.json"))
+STEPS = ("backup", "migrate", "store", "claude", "registry", "python", "jobs", "server")
+EXTRA = (os.path.join("hydra", "bin", ".hydra.py"), os.path.join("hydra", "setup.json"),
+         os.path.join("hydra", "bin", "hydra"), os.path.join("hydra", "bin", "python3"))
+PYTHON_MOST = 64 * 1024 * 1024  # bytes of Hydra-OS's own Python's archive
 
 
 def _wait(env):
@@ -134,6 +148,9 @@ class Update:
         self.made = None  # the backup, once taken
         self.target = None  # the store folder this update made
         self.old = None  # the core in use, {"version", "root"}
+        self.added = []  # the free pages this update added: [name], taken out again if a later step fails
+        self.python_made = None  # the Python this update kept in <root>/hydra/python/, for a home it moved onto it
+        self.python_was = None  # the Python config.json named before
 
     def planted(self, step):
         if self.env.get("HYDRA_TEST_UPDATE_FAIL") == step:
@@ -233,6 +250,121 @@ class Update:
         if os.path.isfile(path):
             files.write_text(path, setup_script.COMMAND % {"root": json.dumps(self.root), "fallback": json.dumps(main_root)})
 
+    def free_pages(self, staged):
+        """Each free page the new release lists that the store's list lacks, added as setup adds it, best effort."""
+        from . import pages
+        release = os.path.join(staged, "release")
+        listed = files.read_json(os.path.join(release, ".claude-plugin", "marketplace.json"), {})
+        market_path = os.path.join(self.root, "hydra", "store", ".claude-plugin", "marketplace.json")
+        market = files.read_json(market_path, {})
+        have = {e.get("name") for e in (market.get("plugins") or []) if isinstance(e, dict)}
+        for e in (listed.get("plugins") or []) if isinstance(listed, dict) else []:
+            name = e.get("name") if isinstance(e, dict) else None
+            if not isinstance(name, str) or name == registry.MAIN or name in have or not isinstance(e.get("source"), str):
+                continue
+            src = os.path.realpath(os.path.join(release, e["source"]))
+            rel = os.path.relpath(src, os.path.realpath(release))
+            target = os.path.join(self.root, "hydra", "store", rel)
+            if rel.startswith("..") or not os.path.isfile(os.path.join(src, ".claude-plugin", "plugin.json")):
+                continue
+            try:
+                if os.path.lexists(target):
+                    shutil.rmtree(target)
+                shutil.copytree(src, target, symlinks=True)
+                market = files.read_json(market_path, {})
+                market["plugins"] = list(market.get("plugins") or []) + [
+                    {"name": name, "source": "./" + rel, "version": str(e.get("version") or ""),
+                     **({"description": e["description"]} if isinstance(e.get("description"), str) else {})}]
+                files.write_json(market_path, market)
+                self.claude(["plugin", "marketplace", "update", cfg.STORE], timeout=120)
+                code, _ = self.claude(["plugin", "install", "%s@%s" % (name, cfg.STORE), "--scope", "local"])
+                if code != 0:
+                    raise OSError("Claude Code didn't install %s" % name)
+                self.added.append(name)
+            except (OSError, ValueError) as err:
+                applog.note("update", "%s left out: %s" % (name, err))
+                self.take_out(name, rel)
+        if self.added:
+            registry.build(self.config, env=self.env)
+            for name in self.added:
+                entry = registry.app(self.root, name) or {}
+                try:
+                    files.folder(entry["record"])
+                    pages.app(self.config, name, force=True)
+                except (OSError, ValueError, KeyError) as err:
+                    applog.note("update", "%s's first page: %s" % (name, err))
+            applog.note("update", "free pages added: %s" % ", ".join(self.added))
+
+    def take_out(self, name, rel=None):
+        """A free page this update added, out again: the store's list, its copy and Claude Code's install."""
+        self.claude(["plugin", "uninstall", "%s@%s" % (name, cfg.STORE), "--scope", "local"])
+        market_path = os.path.join(self.root, "hydra", "store", ".claude-plugin", "marketplace.json")
+        market = files.read_json(market_path, {})
+        if isinstance(market, dict) and isinstance(market.get("plugins"), list):
+            market["plugins"] = [p for p in market["plugins"] if not (isinstance(p, dict) and p.get("name") == name)]
+            files.write_json(market_path, market)
+        shutil.rmtree(os.path.join(self.root, "hydra", "store", rel or name), ignore_errors=True)
+
+    def python_step(self, staged):
+        """A home on the Mac's own python3 (an older Hydra-OS's), moved onto Hydra-OS's own, as setup gets it: the
+        new core's scripts/python.pins line for this chip, "<chip> <sha256> <address>", its archive fetched from its
+        https address (or a file:// one in a made-up release), checked by its sha256, unpacked with the Mac's own tar,
+        started once, then kept in <root>/hydra/python/<its name>/, and config.json, hydra/bin/python3 and the hydra
+        command pointed at it. The backup holds config.json and both tools, so a later failure puts them back."""
+        python = self.config.get("python") or ""
+        if os.path.dirname(os.path.realpath(python)) != "/usr/bin":
+            return
+        pin = None
+        try:
+            with open(os.path.join(staged, "scripts", "python.pins"), encoding="utf-8") as f:
+                for line in f:
+                    parts = line.split()
+                    if len(parts) == 3 and parts[0] == platform.machine():
+                        pin = parts[1:]
+                        break
+        except OSError:
+            pass
+        if not pin:
+            raise ValueError("no Python pinned for this Mac's chip")
+        digest, address = pin
+        parsed = urllib.parse.urlparse(address)
+        name = os.path.basename(parsed.path)
+        if parsed.scheme not in ("https", "file") or not name.endswith(".tar.gz") or name.startswith("."):
+            raise ValueError("that isn't a Python address Hydra-OS takes")
+        name = name[:-len(".tar.gz")]
+        work = os.path.join(self.stage, "python")
+        shutil.rmtree(work, ignore_errors=True)
+        files.folder(work)
+        archive = os.path.join(work, "python.tar.gz")
+        shop._fetch(address if parsed.scheme == "https" else urllib.parse.unquote(parsed.path), PYTHON_MOST, archive)
+        if shop._sha256(archive) != digest:
+            raise ValueError("the Python's sha256 isn't the pinned one")
+        unpacked = os.path.join(work, name)
+        os.makedirs(unpacked)
+        subprocess.run(["/usr/bin/tar", "-xzf", archive, "-C", unpacked, "--strip-components", "1"], check=True,
+                       stdin=subprocess.DEVNULL, capture_output=True, timeout=300)
+        own = os.path.join(unpacked, "bin", "python3")
+        subprocess.run([own, "-I", "-c", "import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)"], check=True,
+                       stdin=subprocess.DEVNULL, capture_output=True, timeout=60)
+        kept = os.path.join(self.root, "hydra", "python")
+        files.folder(kept)
+        dest = os.path.join(kept, name)
+        if os.path.lexists(dest):
+            shutil.rmtree(dest)
+        os.rename(unpacked, dest)
+        self.python_made, self.python_was = dest, python
+        python = os.path.join(dest, "bin", "python3")
+        raw = files.read_json(cfg.path(self.root), {})
+        cfg.write(self.root, dict(raw, python=python))
+        self.config = dict(self.config, python=python)
+        tools.write(self.root, python)
+        command = os.path.join(self.root, "hydra", "bin", "hydra")
+        if os.path.isfile(command):
+            files.write_text(command, '#!/bin/sh\nexec %s -B -s %s "$@"\n' % (
+                shlex.quote(python), shlex.quote(os.path.join(self.root, "hydra", "bin", ".hydra.py"))))
+            os.chmod(command, 0o700)
+        applog.note("update", "moved onto Hydra-OS's own Python, %s" % name)
+
     def jobs_step(self, main_root):
         """Home's server and, when it's on, the tick, started again from main_root: as launch agents, or as a process
         of its own when a chat started it, with the helpers off. With the helpers chosen off, a job of either label an
@@ -294,7 +426,12 @@ class Update:
         """Everything as it was: the backup restored, the store folder this update made taken away, Claude Code's copy
         at the old version again, and the jobs from the old core; then the backup restored once more, so what Claude
         Code's own commands wrote back is byte for byte too. Each part is tried, whatever another did."""
+        for name in self.added:  # the free pages it added, out again, before the backup puts the store's list back
+            self.take_out(name)
         self.restore()
+        if self.python_made:  # the Mac's own python3 again, as config.json names it once more
+            self.config = dict(self.config, python=self.python_was)
+            shutil.rmtree(self.python_made, ignore_errors=True)
         if self.target and self.old and os.path.basename(self.target) != self.old["version"]:
             shutil.rmtree(self.target, ignore_errors=True)
         self.claude(["plugin", "marketplace", "update", cfg.STORE], timeout=120)
@@ -345,11 +482,14 @@ class Update:
             self.store(staged, want["version"])
             self.claude_copy(want["version"])
             new = self.registry_step(want["version"])
+            self.python_step(staged)
+            self.planted("python")
+            self.free_pages(staged)
             self.jobs_step(new["root"])
             self.planted("jobs")
             self.wait_server()
             self.planted("server")
-        except (_Planted, OSError, ValueError, KeyError) as e:
+        except (_Planted, OSError, ValueError, KeyError, subprocess.SubprocessError, shop.Refused) as e:
             applog.note("update", "stopped at %s; putting everything back" % e)
             self.back()
             raise Stop(FAILED)

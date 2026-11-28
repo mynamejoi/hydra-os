@@ -674,8 +674,11 @@ def chart_parts(days, to=None, label_on_line=False):
     ref, key = days.get("ref") or None, ""
     if ref and _is_number(ref.get("value")):
         y = _clamp((ref["value"] - lo) / (hi - lo))
-        if label_on_line:
-            bars += '<span class="rf" style="--y:%.3f"><em>%s</em></span>' % (y, esc(ref.get("label", "")))
+        if label_on_line:  # named at whichever end of its line has no bar over it, else just over the lower end's bars
+            hs = [_clamp((v - lo) / (hi - lo)) if _is_number(v) else 0.0 for v in values]
+            right, left = max(hs[-2:]), max(hs[:2])  # the bars under where the name would sit, about two wide
+            side, ly = ("", y) if right <= y else (" l", y) if left <= y else ("", right) if right <= left else (" l", left)
+            bars += '<span class="rf%s" style="--y:%.3f%s"><em>%s</em></span>' % (side, y, ";--ly:%.3f" % ly if ly > y else "", esc(ref.get("label", "")))
         else:
             bars += '<span class="rf" style="--y:%.3f"></span>' % y
             key = "<span><i></i>%s</span>" % esc(ref.get("label", ""))
@@ -895,6 +898,7 @@ def badges(items):
 # An app that keeps an answer straight away rather than for Claude's next morning, and what its answer shows: Goals, which
 # saves a why as the goal's own.
 ANSWER_KEPT = {"goals": "Saved with your goal", "learning": "Saved. Research uses it at its next scout."}  # Research reads answers on Mondays
+SAYS_KEPT = ("goals",)  # whose answer says what it kept, in one line, shown beside Undo in place of its line above
 
 
 def fill_goal(q, texts):
@@ -1016,21 +1020,25 @@ def question(q, app_id, tag="", accent=None, words=None, ident=None, tint_app=No
                 '<p class="sv"%s>%s</p>') % (esc(key), esc(q.get("text", "")), role, esc(key), chips, "" if chosen else " hidden", saved)
     return '<div%s>%s%s<p class="msg" role="status"></p></div>' % (_attrs(
         " ".join(c for c in ("ask", cls) if c), style, role="group", aria_labelledby="q-" + key, data_app=app_id,
-        data_q=q.get("id", ""), data_kind=kind, data_only=only if kind == "multi" else None), head, body)
+        data_q=q.get("id", ""), data_kind=kind, data_only=only if kind == "multi" else None, data_kept=app_id in SAYS_KEPT and kind == "words"), head, body)
 
 
 ASKS_NONE = "Nothing to ask yet."  # Claude asks with nothing in it, the same on every page
 
 
-def asks(items, note="", block="questions", own=True):
+ASKS_HINT = "When this page has a question for you, it asks here, and you answer in a line."  # a quiet Claude asks, on a page
+
+
+def asks(items, note="", block="questions", own=True, hint=""):
     """Claude asks: the one place for questions, at the foot of the page.
 
-    items  the questions as drawn, each from question(). With none it's one quiet line.
+    items  the questions as drawn, each from question(). With none it's one quiet line, and `hint` beside it says
+           what shows here and how.
     """
     title = '<h2 class="h%s" id="h-%s">Claude asks</h2>' % (" hh" if own else "", esc(block))
     if not items:
-        return ('<section class="t asks quiet" data-block="%s" aria-labelledby="h-%s">%s<p class="note">%s</p></section>'
-                % (esc(block), esc(block), title, esc(note or ASKS_NONE)))
+        return ('<section class="t asks quiet" data-block="%s" aria-labelledby="h-%s">%s<p class="note">%s</p>%s</section>'
+                % (esc(block), esc(block), title, esc(note or ASKS_NONE), '<p class="qh">%s</p>' % esc(hint) if hint else ""))
     n = max(2, min(3, len(items)))
     return ('<section class="t asks" data-block="%s" aria-labelledby="h-%s">%s<p class="note">%s</p>'
             '<div class="qs" style="--n:%d">%s</div></section>') % (
@@ -1624,10 +1632,15 @@ def shop_body(pages, readings, installed=(), have=None, foot="", pending=()):
     return head, '<section class="shop" data-block="shop" aria-label="Pages you can add">%s</section>\n%s' % (cards, key)
 
 
-def rail_apps(apps):
-    """The installed apps the rail holds, after Home, in the kit's order (APPS): every registry app but the main one."""
-    order = list(APPS)
-    return sorted((i for i, a in apps.items() if a.get("kind") != "main"), key=lambda i: order.index(i) if i in order else len(order))
+def rail_apps(apps, root=None):
+    """The installed apps the rail holds, after Home: every registry app but the main one. The pages that came with
+    Hydra-OS lead, then the pages added. A page was added when it came from the Shop (bought) or the Shop sells it (the
+    main app's own catalog); every other page came with Hydra-OS. In each, the kit's order of pages (APPS, Goals first),
+    then any other in the registry's order, so the order they were installed in never counts."""
+    ids = [i for i, a in apps.items() if a.get("kind") != "main"]
+    sold = {p.get("id") for p in (read_json(CATALOG, {}) or {}).get("pages") or [] if isinstance(p, dict)}
+    added, order = sold | set(bought(root)), list(APPS)
+    return sorted(ids, key=lambda i: (i in added, order.index(i) if i in order else len(order), ids.index(i)))
 
 
 def rail(apps, current, root=None):
@@ -1640,7 +1653,7 @@ def rail(apps, current, root=None):
     """
     if apps is None:
         return ""
-    ids = rail_apps(apps)
+    ids = rail_apps(apps, root)
     links = ['<a href="/" target="_top"%s>%s<span class="lbl">Home</span></a>' % (
         _attrs("on" if current == "home" else "", "", aria_current="page" if current == "home" else None), icon("home"))]
     for app_id in ids:
@@ -2224,7 +2237,7 @@ class Page(object):
         note = data.get("note", "") if shown else ""
         if not shown:  # before the app's first run, its own line for when Claude will ask ("before"), else the kit's
             note = (data.get("before") or "") if self.new else "Nothing to ask today."  # one (ASKS_NONE); after it, a quiet day
-        out = asks(items, note=note, block=block["id"])
+        out = asks(items, note=note, block=block["id"], hint="" if items else ASKS_HINT)  # on a quiet day, what shows here and how
         return out, {"id": block["id"], "title": "Claude asks", "says": "", "figures": [],
                      "items": [{"id": q["id"], "label": q["text"]} for q in shown]}
 

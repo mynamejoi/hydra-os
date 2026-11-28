@@ -139,11 +139,11 @@ def unread(root, entry, apps, home):
     return int(newest) > started if started == int(started) else newest > started
 
 
-def tiles_order(apps, layout):
+def tiles_order(apps, layout, root=None):
     """The installed apps that get a tile, in the person's order when they have one, else the rail's (kit.rail_apps: the
-    free pages first, then the kit's order), never the order they were installed in. Goals is
-    the band, so it has none, and an app that isn't installed has none."""
-    ids = [i for i in kit.rail_apps(apps) if i not in BAND and i not in ENGINES]
+    pages that came with Hydra-OS first, then the pages added). Goals is the band, so it has none, and an app that isn't
+    installed has none."""
+    ids = [i for i in kit.rail_apps(apps, root) if i not in BAND and i not in ENGINES]
     if isinstance(layout, dict):
         hidden = set(layout.get("hidden") or [])
         want = [i for i in layout.get("order") or [] if i in ids]
@@ -238,10 +238,11 @@ def read(root, now=None):
     tiles, asked, offers = [], [], {}
     texts = {r["id"]: r["text"] for r in goals["goals"] + goals["record"]}
     hand = {r["id"] for r in goals["goals"]}
-    # Goals has no tile, but its questions, like a new goal's why, are Claude asks' as every app's are.
-    shown = tiles_order(apps, layout)
-    every = tiles_order(apps, dict(layout, hidden=[])) if isinstance(layout, dict) else shown  # a hidden tile's added widgets still show
-    for app_id in every + [i for i in ENGINES if i in apps] + [i for i in BAND if i in apps]:
+    # Goals has no tile, but its questions, like a new goal's why and the day's check-in, are Claude asks' as every
+    # app's are, and come first there: the check-in is also the first question Claude asks in the chat.
+    shown = tiles_order(apps, layout, root)
+    every = tiles_order(apps, dict(layout, hidden=[]), root) if isinstance(layout, dict) else shown  # a hidden tile's added widgets still show
+    for app_id in [i for i in BAND if i in apps] + every + [i for i in ENGINES if i in apps]:
         entry = apps[app_id]
         about = entry.get("home") if isinstance(entry.get("home"), dict) else {}
         home = kit.read_json(os.path.join(kit.record_of(root, app_id, apps), "home.json"))
@@ -378,6 +379,23 @@ def shown_goals(model):
 MORE_GOALS = kit.SOMETHING_ELSE
 
 
+def goal_card(reading):
+    """One of a few goals, as a card in the band: its name, its bar, its pace, its next step, and which page counts it
+    (or that it's kept by hand). A goal not counted yet says what it waits for in its own line."""
+    by = ""
+    if reading["state"] != "new" and reading.get("app"):
+        by = '<span class="gby">%s%s</span>' % (kit.icon(kit.app_icon(reading["app"])), esc(
+            "Kept by hand." if reading["app"] == "goals" else "%s counts it." % (reading.get("app_title") or reading["app"].capitalize())))
+    return kit.goal_item(reading, home=True, under=by)
+
+
+def goal_slot():
+    """The band's room for the next goal, shaped like Add a widget's dashed tile. It points to the chat, where a new goal
+    is shaped and saved: no button, and nothing more to do."""
+    lead, rest = MORE_GOALS.split("? ", 1)
+    return '<li class="gadd">%s<b>%s?</b> <span>%s</span></li>' % (kit.icon("message"), esc(lead), esc(rest))
+
+
 def band(model):
     """Toward your goals: every goal in hand, read as Goals reads them. Until one is measured, each row says who will
     measure it, over the line that invites the next goal, as under goals in hand everywhere. With no goal at all, it's
@@ -386,7 +404,9 @@ def band(model):
     title = '<a href="/goals/" target="_top">Goals</a>' if model["has_goals_app"] else "Goals"
     rows, tally = shown_goals(model)  # the tally shows only from three goals
     top = '<div class="gt"><h2 class="h" id="h-goals">%s</h2>%s</div>' % (title, kit._tally(tally))
-    if model["measured"]:
+    if 1 <= len(readings) <= 3:  # a few goals use the space: each a card, then the room for the next one
+        body = '<ul class="gl5 gcards n%d" style="--n:%d">%s%s</ul>' % (len(readings), len(readings), "".join(goal_card(r) for r in rows), goal_slot())
+    elif model["measured"]:
         n, few = len(readings), len(readings) <= 2
         if few:  # one or two: each row spans the tile, and a goal that's behind says why, from its measuring app
             body = '<ul class="gl5 few" style="--n:1;--n3:1;--n2:1">%s</ul><p class="gq">%s</p>' % (
@@ -566,6 +586,7 @@ def web(model):
 
 ASKS_NOTE = "Written from your goals and your last two weeks. Your answers shape tomorrow's page."
 ASKS_EMPTY = "Nothing to ask yet. Questions show here after your first goal."  # before any goal
+ASKS_HINT = "When a page has a question for you, it asks here, and you answer in a line."  # what shows here, on a quiet day
 
 
 def window_end(model):
@@ -576,15 +597,23 @@ def window_end(model):
     return ends.pop() if len(ends) == 1 else model["today"]
 
 
+def ask_tag(title, goal, text):
+    """A question's label in Claude asks: its page, and the goal it's about, unless its own words already name that goal,
+    as the check-in's "How's '<goal>' going?" does."""
+    if goal and "'%s'" % goal in text:
+        goal = ""
+    return " \u00b7 ".join(t for t in (title, goal) if t)
+
+
 def asks(model):
     """Claude asks: before any goal its empty state says when
     questions come; then the questions under one note, or a quiet day's line."""
     if not model["goals"]["goals"]:
         return kit.asks([], note=ASKS_EMPTY, own=False)
     texts = {r["id"]: r["text"] for r in model["goals"]["goals"]}
-    items = [kit.question(q, app_id, tag=" \u00b7 ".join(t for t in (title, texts.get(q.get("goal"), "")) if t), accent=accent)
+    items = [kit.question(q, app_id, tag=ask_tag(title, texts.get(q.get("goal"), ""), q.get("text") or ""), accent=accent)
              for app_id, title, accent, q in model["asked"]]
-    return kit.asks(items, note=ASKS_NOTE if items else "Nothing to ask today.", own=False)
+    return kit.asks(items, note=ASKS_NOTE if items else "Nothing to ask today.", own=False, hint="" if items else ASKS_HINT)
 
 
 def summary(model, built_at):
@@ -616,8 +645,10 @@ DESCRIPTION = ("Hydra-OS is a set of plugins for Claude Code. It requires your o
                "with Anthropic directly. Hydra-OS never sees your login and doesn't include or resell Claude usage.")
 HELP = (
     ("about", "What is Hydra-OS?", DESCRIPTION),
-    ("devtools", "My Mac asked to install developer tools. What do I do?",  # Claude Code runs git at every start
-     "Choose Install. It's a free Apple download that Claude Code uses, and it takes a few minutes. Hydra-OS needs nothing else."),
+    ("free", "What comes with Hydra-OS?",
+     "Home, Goals and Research come with it, free. Wellbeing, Finance, People, Inbox and Content are pages you can add from the Shop."),
+    ("devtools", "My Mac asked to install developer tools. What do I do?",  # Claude Code itself may run git and bring up Apple's window
+     "Choose Not Now. Hydra-OS doesn't need them, and Claude works without them."),
     ("goal", "How do I set a goal?",
      "Tell Claude what you're working toward, in the chat beside this page. Goals keeps it, and the page that can count it does."),
     ("current", "How do my pages stay up to date?",

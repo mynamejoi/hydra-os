@@ -1,0 +1,9 @@
+{
+  "contract": "release/v1",
+  "plugin": "learning",
+  "version": "1.2.1",
+  "tag": "learning--v1.2.1",
+  "commit": "7930622bfface5bacba2da0e8edfe4eae3f45e56",
+  "exported_at": "2026-11-28T00:28:52-05:00",
+  "marketplace": "hydra-pillars"
+}

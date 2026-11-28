@@ -7,21 +7,21 @@
   "plugins": [
     {
       "name": "hydra",
-      "source": "./hydra/1.1.0",
-      "version": "1.1.0",
+      "source": "./hydra/1.2.0",
+      "version": "1.2.0",
       "description": "Hydra-OS itself: it sets up your Hydra-OS folder, serves Home and each of your pages, and starts each page's daily read"
     },
     {
       "name": "goals",
-      "source": "./goals/0.3.2",
-      "version": "0.3.2",
+      "source": "./goals/0.4.0",
+      "version": "0.4.0",
       "description": "What you're working toward, with each goal's pace from the app that measures it"
     },
     {
-      "name": "health",
-      "source": "./health/1.1.1",
-      "version": "1.1.1",
-      "description": "Sleep, heart rate and what's moving them, from your Apple Health export or a file of days. Suggestions with their reason, never a diagnosis, a medicine, a supplement or a dose"
+      "name": "learning",
+      "source": "./learning/1.2.1",
+      "version": "1.2.1",
+      "description": "Research: a weekly scout for what you're working on. What's new, what you're missing, how to sell it, the openings, what to learn and the Claude skills worth using, from Claude's own web search in general words only, public release notes and the notes you drop in. Never advice, and never your name or anything you typed in a search"
     }
   ]
 }

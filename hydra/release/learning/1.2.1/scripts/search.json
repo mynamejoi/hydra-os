@@ -1,0 +1,1814 @@
+{
+ "contract": "search/v1",
+ "about": "Research's shipped public words: the phrases for each question and the closed list of general topics. A query is a phrase with {topic} filled, then the month in words and the year. Lowercase letters and single spaces only: no digit, apostrophe, punctuation or brand.",
+ "phrases": {
+  "learn": [
+   "{topic} for beginners",
+   "how to get better at {topic}"
+  ],
+  "sell": [
+   "how to price {topic}",
+   "where to sell {topic}",
+   "who buys {topic}"
+  ],
+  "new": [
+   "{topic} news",
+   "{topic} trends this month"
+  ],
+  "opportunities": [
+   "{topic} grants",
+   "{topic} competitions",
+   "{topic} partnerships"
+  ],
+  "gaps": [
+   "{topic} common mistakes",
+   "what beginners miss about {topic}"
+  ],
+  "skills": [
+   "claude for {topic}",
+   "ai tools for {topic}"
+  ]
+ },
+ "topics": [
+  {
+   "id": "handmade-ceramics",
+   "words": "handmade ceramics",
+   "group": "makers"
+  },
+  {
+   "id": "pottery-classes",
+   "words": "pottery classes",
+   "group": "makers"
+  },
+  {
+   "id": "handmade-jewelry",
+   "words": "handmade jewelry",
+   "group": "makers"
+  },
+  {
+   "id": "candle-making",
+   "words": "candle making",
+   "group": "makers"
+  },
+  {
+   "id": "soap-making",
+   "words": "soap making",
+   "group": "makers"
+  },
+  {
+   "id": "knitting-patterns",
+   "words": "knitting patterns",
+   "group": "makers"
+  },
+  {
+   "id": "crochet-patterns",
+   "words": "crochet patterns",
+   "group": "makers"
+  },
+  {
+   "id": "sewing-patterns",
+   "words": "sewing patterns",
+   "group": "makers"
+  },
+  {
+   "id": "quilting",
+   "words": "quilting",
+   "group": "makers"
+  },
+  {
+   "id": "embroidery",
+   "words": "embroidery",
+   "group": "makers"
+  },
+  {
+   "id": "woodworking",
+   "words": "woodworking",
+   "group": "makers"
+  },
+  {
+   "id": "furniture-making",
+   "words": "furniture making",
+   "group": "makers"
+  },
+  {
+   "id": "leather-goods",
+   "words": "leather goods",
+   "group": "makers"
+  },
+  {
+   "id": "screen-printing",
+   "words": "screen printing",
+   "group": "makers"
+  },
+  {
+   "id": "print-on-demand",
+   "words": "print on demand",
+   "group": "makers"
+  },
+  {
+   "id": "custom-apparel",
+   "words": "custom apparel",
+   "group": "makers"
+  },
+  {
+   "id": "sticker-design",
+   "words": "sticker design",
+   "group": "makers"
+  },
+  {
+   "id": "art-prints",
+   "words": "art prints",
+   "group": "makers"
+  },
+  {
+   "id": "greeting-cards",
+   "words": "greeting cards",
+   "group": "makers"
+  },
+  {
+   "id": "calligraphy",
+   "words": "calligraphy",
+   "group": "makers"
+  },
+  {
+   "id": "resin-art",
+   "words": "resin art",
+   "group": "makers"
+  },
+  {
+   "id": "glass-art",
+   "words": "glass art",
+   "group": "makers"
+  },
+  {
+   "id": "metalwork",
+   "words": "metalwork",
+   "group": "makers"
+  },
+  {
+   "id": "bookbinding",
+   "words": "bookbinding",
+   "group": "makers"
+  },
+  {
+   "id": "paper-crafts",
+   "words": "paper crafts",
+   "group": "makers"
+  },
+  {
+   "id": "model-making",
+   "words": "model making",
+   "group": "makers"
+  },
+  {
+   "id": "miniature-painting",
+   "words": "miniature painting",
+   "group": "makers"
+  },
+  {
+   "id": "upcycled-furniture",
+   "words": "upcycled furniture",
+   "group": "makers"
+  },
+  {
+   "id": "natural-dyeing",
+   "words": "natural dyeing",
+   "group": "makers"
+  },
+  {
+   "id": "weaving",
+   "words": "weaving",
+   "group": "makers"
+  },
+  {
+   "id": "online-craft-shop",
+   "words": "online craft shop",
+   "group": "shops"
+  },
+  {
+   "id": "small-online-store",
+   "words": "small online store",
+   "group": "shops"
+  },
+  {
+   "id": "vintage-clothing-resale",
+   "words": "vintage clothing resale",
+   "group": "shops"
+  },
+  {
+   "id": "thrift-flipping",
+   "words": "thrift flipping",
+   "group": "shops"
+  },
+  {
+   "id": "plant-shop",
+   "words": "plant shop",
+   "group": "shops"
+  },
+  {
+   "id": "flower-arranging",
+   "words": "flower arranging",
+   "group": "shops"
+  },
+  {
+   "id": "gift-boxes",
+   "words": "gift boxes",
+   "group": "shops"
+  },
+  {
+   "id": "subscription-boxes",
+   "words": "subscription boxes",
+   "group": "shops"
+  },
+  {
+   "id": "pop-up-shops",
+   "words": "pop up shops",
+   "group": "shops"
+  },
+  {
+   "id": "craft-fairs",
+   "words": "craft fairs",
+   "group": "shops"
+  },
+  {
+   "id": "farmers-market-stalls",
+   "words": "farmers market stalls",
+   "group": "shops"
+  },
+  {
+   "id": "wholesale-to-shops",
+   "words": "wholesale to shops",
+   "group": "shops"
+  },
+  {
+   "id": "consignment-selling",
+   "words": "consignment selling",
+   "group": "shops"
+  },
+  {
+   "id": "product-photography",
+   "words": "product photography",
+   "group": "shops"
+  },
+  {
+   "id": "packaging-design",
+   "words": "packaging design",
+   "group": "shops"
+  },
+  {
+   "id": "shipping-for-small-shops",
+   "words": "shipping for small shops",
+   "group": "shops"
+  },
+  {
+   "id": "customer-reviews",
+   "words": "customer reviews",
+   "group": "shops"
+  },
+  {
+   "id": "repeat-customers",
+   "words": "repeat customers",
+   "group": "shops"
+  },
+  {
+   "id": "product-bundles",
+   "words": "product bundles",
+   "group": "shops"
+  },
+  {
+   "id": "seasonal-products",
+   "words": "seasonal products",
+   "group": "shops"
+  },
+  {
+   "id": "local-delivery",
+   "words": "local delivery",
+   "group": "shops"
+  },
+  {
+   "id": "small-shop-inventory",
+   "words": "small shop inventory",
+   "group": "shops"
+  },
+  {
+   "id": "handmade-marketplace-selling",
+   "words": "handmade marketplace selling",
+   "group": "shops"
+  },
+  {
+   "id": "preorders",
+   "words": "preorders",
+   "group": "shops"
+  },
+  {
+   "id": "limited-editions",
+   "words": "limited editions",
+   "group": "shops"
+  },
+  {
+   "id": "video-channel-growth",
+   "words": "video channel growth",
+   "group": "creators"
+  },
+  {
+   "id": "short-videos",
+   "words": "short videos",
+   "group": "creators"
+  },
+  {
+   "id": "video-editing",
+   "words": "video editing",
+   "group": "creators"
+  },
+  {
+   "id": "podcasting",
+   "words": "podcasting",
+   "group": "creators"
+  },
+  {
+   "id": "podcast-guests",
+   "words": "podcast guests",
+   "group": "creators"
+  },
+  {
+   "id": "newsletter-writing",
+   "words": "newsletter writing",
+   "group": "creators"
+  },
+  {
+   "id": "newsletter-growth",
+   "words": "newsletter growth",
+   "group": "creators"
+  },
+  {
+   "id": "blogging",
+   "words": "blogging",
+   "group": "creators"
+  },
+  {
+   "id": "personal-brand",
+   "words": "personal brand",
+   "group": "creators"
+  },
+  {
+   "id": "social-media-content",
+   "words": "social media content",
+   "group": "creators"
+  },
+  {
+   "id": "content-calendars",
+   "words": "content calendars",
+   "group": "creators"
+  },
+  {
+   "id": "live-streaming",
+   "words": "live streaming",
+   "group": "creators"
+  },
+  {
+   "id": "online-courses",
+   "words": "online courses",
+   "group": "creators"
+  },
+  {
+   "id": "course-creation",
+   "words": "course creation",
+   "group": "creators"
+  },
+  {
+   "id": "membership-communities",
+   "words": "membership communities",
+   "group": "creators"
+  },
+  {
+   "id": "digital-downloads",
+   "words": "digital downloads",
+   "group": "creators"
+  },
+  {
+   "id": "photography-business",
+   "words": "photography business",
+   "group": "creators"
+  },
+  {
+   "id": "stock-photography",
+   "words": "stock photography",
+   "group": "creators"
+  },
+  {
+   "id": "music-production",
+   "words": "music production",
+   "group": "creators"
+  },
+  {
+   "id": "indie-music",
+   "words": "indie music",
+   "group": "creators"
+  },
+  {
+   "id": "music-marketing",
+   "words": "music marketing",
+   "group": "creators"
+  },
+  {
+   "id": "voice-over-work",
+   "words": "voice over work",
+   "group": "creators"
+  },
+  {
+   "id": "travel-videos",
+   "words": "travel videos",
+   "group": "creators"
+  },
+  {
+   "id": "cooking-videos",
+   "words": "cooking videos",
+   "group": "creators"
+  },
+  {
+   "id": "crafting-videos",
+   "words": "crafting videos",
+   "group": "creators"
+  },
+  {
+   "id": "tutorial-videos",
+   "words": "tutorial videos",
+   "group": "creators"
+  },
+  {
+   "id": "sponsorships-for-creators",
+   "words": "sponsorships for creators",
+   "group": "creators"
+  },
+  {
+   "id": "audience-growth",
+   "words": "audience growth",
+   "group": "creators"
+  },
+  {
+   "id": "creator-income",
+   "words": "creator income",
+   "group": "creators"
+  },
+  {
+   "id": "book-writing",
+   "words": "book writing",
+   "group": "writers"
+  },
+  {
+   "id": "self-publishing",
+   "words": "self publishing",
+   "group": "writers"
+  },
+  {
+   "id": "picture-books",
+   "words": "picture books",
+   "group": "writers"
+  },
+  {
+   "id": "fiction-writing",
+   "words": "fiction writing",
+   "group": "writers"
+  },
+  {
+   "id": "poetry",
+   "words": "poetry",
+   "group": "writers"
+  },
+  {
+   "id": "memoir-writing",
+   "words": "memoir writing",
+   "group": "writers"
+  },
+  {
+   "id": "nonfiction-books",
+   "words": "nonfiction books",
+   "group": "writers"
+  },
+  {
+   "id": "book-marketing",
+   "words": "book marketing",
+   "group": "writers"
+  },
+  {
+   "id": "book-covers",
+   "words": "book covers",
+   "group": "writers"
+  },
+  {
+   "id": "audiobooks",
+   "words": "audiobooks",
+   "group": "writers"
+  },
+  {
+   "id": "freelance-writing",
+   "words": "freelance writing",
+   "group": "writers"
+  },
+  {
+   "id": "copywriting",
+   "words": "copywriting",
+   "group": "writers"
+  },
+  {
+   "id": "technical-writing",
+   "words": "technical writing",
+   "group": "writers"
+  },
+  {
+   "id": "ghostwriting",
+   "words": "ghostwriting",
+   "group": "writers"
+  },
+  {
+   "id": "grant-writing",
+   "words": "grant writing",
+   "group": "writers"
+  },
+  {
+   "id": "screenwriting",
+   "words": "screenwriting",
+   "group": "writers"
+  },
+  {
+   "id": "comics",
+   "words": "comics",
+   "group": "writers"
+  },
+  {
+   "id": "illustration",
+   "words": "illustration",
+   "group": "writers"
+  },
+  {
+   "id": "writing-workshops",
+   "words": "writing workshops",
+   "group": "writers"
+  },
+  {
+   "id": "literary-magazines",
+   "words": "literary magazines",
+   "group": "writers"
+  },
+  {
+   "id": "writing-habits",
+   "words": "writing habits",
+   "group": "writers"
+  },
+  {
+   "id": "editing-services",
+   "words": "editing services",
+   "group": "writers"
+  },
+  {
+   "id": "translation-services",
+   "words": "translation services",
+   "group": "writers"
+  },
+  {
+   "id": "author-newsletters",
+   "words": "author newsletters",
+   "group": "writers"
+  },
+  {
+   "id": "book-launches",
+   "words": "book launches",
+   "group": "writers"
+  },
+  {
+   "id": "mobile-apps",
+   "words": "mobile apps",
+   "group": "software"
+  },
+  {
+   "id": "web-apps",
+   "words": "web apps",
+   "group": "software"
+  },
+  {
+   "id": "browser-extensions",
+   "words": "browser extensions",
+   "group": "software"
+  },
+  {
+   "id": "software-for-small-business",
+   "words": "software for small business",
+   "group": "software"
+  },
+  {
+   "id": "developer-tools",
+   "words": "developer tools",
+   "group": "software"
+  },
+  {
+   "id": "open-source-projects",
+   "words": "open source projects",
+   "group": "software"
+  },
+  {
+   "id": "no-code-tools",
+   "words": "no code tools",
+   "group": "software"
+  },
+  {
+   "id": "automation-workflows",
+   "words": "automation workflows",
+   "group": "software"
+  },
+  {
+   "id": "chatbots",
+   "words": "chatbots",
+   "group": "software"
+  },
+  {
+   "id": "ai-agents",
+   "words": "ai agents",
+   "group": "software"
+  },
+  {
+   "id": "ai-apps",
+   "words": "ai apps",
+   "group": "software"
+  },
+  {
+   "id": "data-analysis",
+   "words": "data analysis",
+   "group": "software"
+  },
+  {
+   "id": "data-visualization",
+   "words": "data visualization",
+   "group": "software"
+  },
+  {
+   "id": "spreadsheet-templates",
+   "words": "spreadsheet templates",
+   "group": "software"
+  },
+  {
+   "id": "website-building",
+   "words": "website building",
+   "group": "software"
+  },
+  {
+   "id": "landing-pages",
+   "words": "landing pages",
+   "group": "software"
+  },
+  {
+   "id": "online-store-setup",
+   "words": "online store setup",
+   "group": "software"
+  },
+  {
+   "id": "api-products",
+   "words": "api products",
+   "group": "software"
+  },
+  {
+   "id": "app-store-marketing",
+   "words": "app store marketing",
+   "group": "software"
+  },
+  {
+   "id": "software-pricing",
+   "words": "software pricing",
+   "group": "software"
+  },
+  {
+   "id": "user-onboarding",
+   "words": "user onboarding",
+   "group": "software"
+  },
+  {
+   "id": "customer-support-tools",
+   "words": "customer support tools",
+   "group": "software"
+  },
+  {
+   "id": "workflow-templates",
+   "words": "workflow templates",
+   "group": "software"
+  },
+  {
+   "id": "personal-software",
+   "words": "personal software",
+   "group": "software"
+  },
+  {
+   "id": "internal-tools",
+   "words": "internal tools",
+   "group": "software"
+  },
+  {
+   "id": "indie-games",
+   "words": "indie games",
+   "group": "games"
+  },
+  {
+   "id": "game-development",
+   "words": "game development",
+   "group": "games"
+  },
+  {
+   "id": "game-design",
+   "words": "game design",
+   "group": "games"
+  },
+  {
+   "id": "game-marketing",
+   "words": "game marketing",
+   "group": "games"
+  },
+  {
+   "id": "game-art",
+   "words": "game art",
+   "group": "games"
+  },
+  {
+   "id": "game-music",
+   "words": "game music",
+   "group": "games"
+  },
+  {
+   "id": "level-design",
+   "words": "level design",
+   "group": "games"
+  },
+  {
+   "id": "board-game-design",
+   "words": "board game design",
+   "group": "games"
+  },
+  {
+   "id": "tabletop-games",
+   "words": "tabletop games",
+   "group": "games"
+  },
+  {
+   "id": "card-games",
+   "words": "card games",
+   "group": "games"
+  },
+  {
+   "id": "puzzle-design",
+   "words": "puzzle design",
+   "group": "games"
+  },
+  {
+   "id": "game-communities",
+   "words": "game communities",
+   "group": "games"
+  },
+  {
+   "id": "game-jams",
+   "words": "game jams",
+   "group": "games"
+  },
+  {
+   "id": "mobile-games",
+   "words": "mobile games",
+   "group": "games"
+  },
+  {
+   "id": "story-games",
+   "words": "story games",
+   "group": "games"
+  },
+  {
+   "id": "game-testing",
+   "words": "game testing",
+   "group": "games"
+  },
+  {
+   "id": "game-launches",
+   "words": "game launches",
+   "group": "games"
+  },
+  {
+   "id": "game-trailers",
+   "words": "game trailers",
+   "group": "games"
+  },
+  {
+   "id": "role-playing-games",
+   "words": "role playing games",
+   "group": "games"
+  },
+  {
+   "id": "educational-games",
+   "words": "educational games",
+   "group": "games"
+  },
+  {
+   "id": "freelance-design",
+   "words": "freelance design",
+   "group": "services"
+  },
+  {
+   "id": "graphic-design",
+   "words": "graphic design",
+   "group": "services"
+  },
+  {
+   "id": "web-design",
+   "words": "web design",
+   "group": "services"
+  },
+  {
+   "id": "logo-design",
+   "words": "logo design",
+   "group": "services"
+  },
+  {
+   "id": "brand-design",
+   "words": "brand design",
+   "group": "services"
+  },
+  {
+   "id": "interior-design",
+   "words": "interior design",
+   "group": "services"
+  },
+  {
+   "id": "home-organizing",
+   "words": "home organizing",
+   "group": "services"
+  },
+  {
+   "id": "event-planning",
+   "words": "event planning",
+   "group": "services"
+  },
+  {
+   "id": "wedding-planning",
+   "words": "wedding planning",
+   "group": "services"
+  },
+  {
+   "id": "wedding-photography",
+   "words": "wedding photography",
+   "group": "services"
+  },
+  {
+   "id": "portrait-photography",
+   "words": "portrait photography",
+   "group": "services"
+  },
+  {
+   "id": "virtual-assistance",
+   "words": "virtual assistance",
+   "group": "services"
+  },
+  {
+   "id": "bookkeeping-services",
+   "words": "bookkeeping services",
+   "group": "services"
+  },
+  {
+   "id": "social-media-management",
+   "words": "social media management",
+   "group": "services"
+  },
+  {
+   "id": "marketing-services",
+   "words": "marketing services",
+   "group": "services"
+  },
+  {
+   "id": "consulting",
+   "words": "consulting",
+   "group": "services"
+  },
+  {
+   "id": "translation",
+   "words": "translation",
+   "group": "services"
+  },
+  {
+   "id": "transcription",
+   "words": "transcription",
+   "group": "services"
+  },
+  {
+   "id": "video-editing-services",
+   "words": "video editing services",
+   "group": "services"
+  },
+  {
+   "id": "handyman-services",
+   "words": "handyman services",
+   "group": "services"
+  },
+  {
+   "id": "cleaning-business",
+   "words": "cleaning business",
+   "group": "services"
+  },
+  {
+   "id": "landscaping-business",
+   "words": "landscaping business",
+   "group": "services"
+  },
+  {
+   "id": "pet-sitting",
+   "words": "pet sitting",
+   "group": "services"
+  },
+  {
+   "id": "dog-training",
+   "words": "dog training",
+   "group": "services"
+  },
+  {
+   "id": "mobile-car-detailing",
+   "words": "mobile car detailing",
+   "group": "services"
+  },
+  {
+   "id": "life-coaching",
+   "words": "life coaching",
+   "group": "coaching"
+  },
+  {
+   "id": "business-coaching",
+   "words": "business coaching",
+   "group": "coaching"
+  },
+  {
+   "id": "career-coaching",
+   "words": "career coaching",
+   "group": "coaching"
+  },
+  {
+   "id": "fitness-coaching",
+   "words": "fitness coaching",
+   "group": "coaching"
+  },
+  {
+   "id": "personal-training",
+   "words": "personal training",
+   "group": "coaching"
+  },
+  {
+   "id": "running-coaching",
+   "words": "running coaching",
+   "group": "coaching"
+  },
+  {
+   "id": "yoga-teaching",
+   "words": "yoga teaching",
+   "group": "coaching"
+  },
+  {
+   "id": "pilates-teaching",
+   "words": "pilates teaching",
+   "group": "coaching"
+  },
+  {
+   "id": "dance-classes",
+   "words": "dance classes",
+   "group": "coaching"
+  },
+  {
+   "id": "music-lessons",
+   "words": "music lessons",
+   "group": "coaching"
+  },
+  {
+   "id": "art-classes",
+   "words": "art classes",
+   "group": "coaching"
+  },
+  {
+   "id": "cooking-classes",
+   "words": "cooking classes",
+   "group": "coaching"
+  },
+  {
+   "id": "language-tutoring",
+   "words": "language tutoring",
+   "group": "coaching"
+  },
+  {
+   "id": "math-tutoring",
+   "words": "math tutoring",
+   "group": "coaching"
+  },
+  {
+   "id": "test-preparation-tutoring",
+   "words": "test preparation tutoring",
+   "group": "coaching"
+  },
+  {
+   "id": "public-speaking-coaching",
+   "words": "public speaking coaching",
+   "group": "coaching"
+  },
+  {
+   "id": "writing-coaching",
+   "words": "writing coaching",
+   "group": "coaching"
+  },
+  {
+   "id": "parenting-classes",
+   "words": "parenting classes",
+   "group": "coaching"
+  },
+  {
+   "id": "mindfulness-classes",
+   "words": "mindfulness classes",
+   "group": "coaching"
+  },
+  {
+   "id": "group-workshops",
+   "words": "group workshops",
+   "group": "coaching"
+  },
+  {
+   "id": "online-coaching",
+   "words": "online coaching",
+   "group": "coaching"
+  },
+  {
+   "id": "coaching-packages",
+   "words": "coaching packages",
+   "group": "coaching"
+  },
+  {
+   "id": "lesson-planning",
+   "words": "lesson planning",
+   "group": "teaching"
+  },
+  {
+   "id": "classroom-activities",
+   "words": "classroom activities",
+   "group": "teaching"
+  },
+  {
+   "id": "teaching-resources",
+   "words": "teaching resources",
+   "group": "teaching"
+  },
+  {
+   "id": "online-teaching",
+   "words": "online teaching",
+   "group": "teaching"
+  },
+  {
+   "id": "homeschooling",
+   "words": "homeschooling",
+   "group": "teaching"
+  },
+  {
+   "id": "early-childhood-education",
+   "words": "early childhood education",
+   "group": "teaching"
+  },
+  {
+   "id": "stem-education",
+   "words": "stem education",
+   "group": "teaching"
+  },
+  {
+   "id": "science-experiments",
+   "words": "science experiments",
+   "group": "teaching"
+  },
+  {
+   "id": "reading-programs",
+   "words": "reading programs",
+   "group": "teaching"
+  },
+  {
+   "id": "special-education-resources",
+   "words": "special education resources",
+   "group": "teaching"
+  },
+  {
+   "id": "classroom-technology",
+   "words": "classroom technology",
+   "group": "teaching"
+  },
+  {
+   "id": "student-engagement",
+   "words": "student engagement",
+   "group": "teaching"
+  },
+  {
+   "id": "adult-education",
+   "words": "adult education",
+   "group": "teaching"
+  },
+  {
+   "id": "teaching-assistants",
+   "words": "teaching assistants",
+   "group": "teaching"
+  },
+  {
+   "id": "school-clubs",
+   "words": "school clubs",
+   "group": "teaching"
+  },
+  {
+   "id": "after-school-programs",
+   "words": "after school programs",
+   "group": "teaching"
+  },
+  {
+   "id": "educational-videos",
+   "words": "educational videos",
+   "group": "teaching"
+  },
+  {
+   "id": "learning-games",
+   "words": "learning games",
+   "group": "teaching"
+  },
+  {
+   "id": "curriculum-design",
+   "words": "curriculum design",
+   "group": "teaching"
+  },
+  {
+   "id": "teacher-productivity",
+   "words": "teacher productivity",
+   "group": "teaching"
+  },
+  {
+   "id": "study-skills",
+   "words": "study skills",
+   "group": "students"
+  },
+  {
+   "id": "exam-preparation",
+   "words": "exam preparation",
+   "group": "students"
+  },
+  {
+   "id": "note-taking",
+   "words": "note taking",
+   "group": "students"
+  },
+  {
+   "id": "college-applications",
+   "words": "college applications",
+   "group": "students"
+  },
+  {
+   "id": "scholarships",
+   "words": "scholarships",
+   "group": "students"
+  },
+  {
+   "id": "thesis-writing",
+   "words": "thesis writing",
+   "group": "students"
+  },
+  {
+   "id": "research-methods",
+   "words": "research methods",
+   "group": "students"
+  },
+  {
+   "id": "academic-writing",
+   "words": "academic writing",
+   "group": "students"
+  },
+  {
+   "id": "learning-to-code",
+   "words": "learning to code",
+   "group": "students"
+  },
+  {
+   "id": "data-science",
+   "words": "data science",
+   "group": "students"
+  },
+  {
+   "id": "language-learning",
+   "words": "language learning",
+   "group": "students"
+  },
+  {
+   "id": "student-budgets",
+   "words": "student budgets",
+   "group": "students"
+  },
+  {
+   "id": "student-startups",
+   "words": "student startups",
+   "group": "students"
+  },
+  {
+   "id": "internships",
+   "words": "internships",
+   "group": "students"
+  },
+  {
+   "id": "study-groups",
+   "words": "study groups",
+   "group": "students"
+  },
+  {
+   "id": "presentation-skills",
+   "words": "presentation skills",
+   "group": "students"
+  },
+  {
+   "id": "group-projects",
+   "words": "group projects",
+   "group": "students"
+  },
+  {
+   "id": "research-papers",
+   "words": "research papers",
+   "group": "students"
+  },
+  {
+   "id": "lab-skills",
+   "words": "lab skills",
+   "group": "students"
+  },
+  {
+   "id": "career-fairs",
+   "words": "career fairs",
+   "group": "students"
+  },
+  {
+   "id": "career-change",
+   "words": "career change",
+   "group": "careers"
+  },
+  {
+   "id": "job-search",
+   "words": "job search",
+   "group": "careers"
+  },
+  {
+   "id": "resume-writing",
+   "words": "resume writing",
+   "group": "careers"
+  },
+  {
+   "id": "cover-letters",
+   "words": "cover letters",
+   "group": "careers"
+  },
+  {
+   "id": "job-interviews",
+   "words": "job interviews",
+   "group": "careers"
+  },
+  {
+   "id": "portfolio-building",
+   "words": "portfolio building",
+   "group": "careers"
+  },
+  {
+   "id": "networking-events",
+   "words": "networking events",
+   "group": "careers"
+  },
+  {
+   "id": "salary-negotiation",
+   "words": "salary negotiation",
+   "group": "careers"
+  },
+  {
+   "id": "remote-work",
+   "words": "remote work",
+   "group": "careers"
+  },
+  {
+   "id": "side-hustles",
+   "words": "side hustles",
+   "group": "careers"
+  },
+  {
+   "id": "freelancing",
+   "words": "freelancing",
+   "group": "careers"
+  },
+  {
+   "id": "starting-a-business",
+   "words": "starting a business",
+   "group": "careers"
+  },
+  {
+   "id": "working-from-home",
+   "words": "working from home",
+   "group": "careers"
+  },
+  {
+   "id": "professional-development",
+   "words": "professional development",
+   "group": "careers"
+  },
+  {
+   "id": "leadership-skills",
+   "words": "leadership skills",
+   "group": "careers"
+  },
+  {
+   "id": "management-skills",
+   "words": "management skills",
+   "group": "careers"
+  },
+  {
+   "id": "mentoring",
+   "words": "mentoring",
+   "group": "careers"
+  },
+  {
+   "id": "personal-finance-basics",
+   "words": "personal finance basics",
+   "group": "careers"
+  },
+  {
+   "id": "time-management",
+   "words": "time management",
+   "group": "careers"
+  },
+  {
+   "id": "productivity",
+   "words": "productivity",
+   "group": "careers"
+  },
+  {
+   "id": "baking",
+   "words": "baking",
+   "group": "food"
+  },
+  {
+   "id": "sourdough-bread",
+   "words": "sourdough bread",
+   "group": "food"
+  },
+  {
+   "id": "cake-decorating",
+   "words": "cake decorating",
+   "group": "food"
+  },
+  {
+   "id": "meal-prep-business",
+   "words": "meal prep business",
+   "group": "food"
+  },
+  {
+   "id": "catering",
+   "words": "catering",
+   "group": "food"
+  },
+  {
+   "id": "food-trucks",
+   "words": "food trucks",
+   "group": "food"
+  },
+  {
+   "id": "home-cooking",
+   "words": "home cooking",
+   "group": "food"
+  },
+  {
+   "id": "recipe-development",
+   "words": "recipe development",
+   "group": "food"
+  },
+  {
+   "id": "food-photography",
+   "words": "food photography",
+   "group": "food"
+  },
+  {
+   "id": "food-blogging",
+   "words": "food blogging",
+   "group": "food"
+  },
+  {
+   "id": "coffee-roasting",
+   "words": "coffee roasting",
+   "group": "food"
+  },
+  {
+   "id": "tea-blends",
+   "words": "tea blends",
+   "group": "food"
+  },
+  {
+   "id": "preserves-and-jams",
+   "words": "preserves and jams",
+   "group": "food"
+  },
+  {
+   "id": "hot-sauce-making",
+   "words": "hot sauce making",
+   "group": "food"
+  },
+  {
+   "id": "chocolate-making",
+   "words": "chocolate making",
+   "group": "food"
+  },
+  {
+   "id": "vegan-cooking",
+   "words": "vegan cooking",
+   "group": "food"
+  },
+  {
+   "id": "cottage-food-business",
+   "words": "cottage food business",
+   "group": "food"
+  },
+  {
+   "id": "farm-to-table",
+   "words": "farm to table",
+   "group": "food"
+  },
+  {
+   "id": "food-markets",
+   "words": "food markets",
+   "group": "food"
+  },
+  {
+   "id": "cookbook-writing",
+   "words": "cookbook writing",
+   "group": "food"
+  },
+  {
+   "id": "community-events",
+   "words": "community events",
+   "group": "community"
+  },
+  {
+   "id": "nonprofit-fundraising",
+   "words": "nonprofit fundraising",
+   "group": "community"
+  },
+  {
+   "id": "volunteer-programs",
+   "words": "volunteer programs",
+   "group": "community"
+  },
+  {
+   "id": "local-clubs",
+   "words": "local clubs",
+   "group": "community"
+  },
+  {
+   "id": "neighborhood-projects",
+   "words": "neighborhood projects",
+   "group": "community"
+  },
+  {
+   "id": "community-gardens",
+   "words": "community gardens",
+   "group": "community"
+  },
+  {
+   "id": "mutual-aid",
+   "words": "mutual aid",
+   "group": "community"
+  },
+  {
+   "id": "youth-programs",
+   "words": "youth programs",
+   "group": "community"
+  },
+  {
+   "id": "arts-festivals",
+   "words": "arts festivals",
+   "group": "community"
+  },
+  {
+   "id": "open-mic-nights",
+   "words": "open mic nights",
+   "group": "community"
+  },
+  {
+   "id": "book-clubs",
+   "words": "book clubs",
+   "group": "community"
+  },
+  {
+   "id": "running-clubs",
+   "words": "running clubs",
+   "group": "community"
+  },
+  {
+   "id": "hiking-groups",
+   "words": "hiking groups",
+   "group": "community"
+  },
+  {
+   "id": "makerspaces",
+   "words": "makerspaces",
+   "group": "community"
+  },
+  {
+   "id": "community-radio",
+   "words": "community radio",
+   "group": "community"
+  },
+  {
+   "id": "local-history-projects",
+   "words": "local history projects",
+   "group": "community"
+  },
+  {
+   "id": "charity-events",
+   "words": "charity events",
+   "group": "community"
+  },
+  {
+   "id": "clubs-and-societies",
+   "words": "clubs and societies",
+   "group": "community"
+  },
+  {
+   "id": "online-communities",
+   "words": "online communities",
+   "group": "community"
+  },
+  {
+   "id": "event-sponsorship",
+   "words": "event sponsorship",
+   "group": "community"
+  },
+  {
+   "id": "gardening",
+   "words": "gardening",
+   "group": "outdoors"
+  },
+  {
+   "id": "urban-farming",
+   "words": "urban farming",
+   "group": "outdoors"
+  },
+  {
+   "id": "beekeeping",
+   "words": "beekeeping",
+   "group": "outdoors"
+  },
+  {
+   "id": "composting",
+   "words": "composting",
+   "group": "outdoors"
+  },
+  {
+   "id": "native-plants",
+   "words": "native plants",
+   "group": "outdoors"
+  },
+  {
+   "id": "houseplants",
+   "words": "houseplants",
+   "group": "outdoors"
+  },
+  {
+   "id": "outdoor-guiding",
+   "words": "outdoor guiding",
+   "group": "outdoors"
+  },
+  {
+   "id": "camping",
+   "words": "camping",
+   "group": "outdoors"
+  },
+  {
+   "id": "hiking",
+   "words": "hiking",
+   "group": "outdoors"
+  },
+  {
+   "id": "cycling",
+   "words": "cycling",
+   "group": "outdoors"
+  },
+  {
+   "id": "fishing",
+   "words": "fishing",
+   "group": "outdoors"
+  },
+  {
+   "id": "birdwatching",
+   "words": "birdwatching",
+   "group": "outdoors"
+  },
+  {
+   "id": "nature-photography",
+   "words": "nature photography",
+   "group": "outdoors"
+  },
+  {
+   "id": "trail-running",
+   "words": "trail running",
+   "group": "outdoors"
+  },
+  {
+   "id": "surfing",
+   "words": "surfing",
+   "group": "outdoors"
+  },
+  {
+   "id": "climbing",
+   "words": "climbing",
+   "group": "outdoors"
+  },
+  {
+   "id": "sailing",
+   "words": "sailing",
+   "group": "outdoors"
+  },
+  {
+   "id": "travel-planning",
+   "words": "travel planning",
+   "group": "outdoors"
+  },
+  {
+   "id": "budget-travel",
+   "words": "budget travel",
+   "group": "outdoors"
+  },
+  {
+   "id": "van-life",
+   "words": "van life",
+   "group": "outdoors"
+  },
+  {
+   "id": "electronics-projects",
+   "words": "electronics projects",
+   "group": "making"
+  },
+  {
+   "id": "robotics",
+   "words": "robotics",
+   "group": "making"
+  },
+  {
+   "id": "drones",
+   "words": "drones",
+   "group": "making"
+  },
+  {
+   "id": "home-automation",
+   "words": "home automation",
+   "group": "making"
+  },
+  {
+   "id": "smart-home",
+   "words": "smart home",
+   "group": "making"
+  },
+  {
+   "id": "maker-projects",
+   "words": "maker projects",
+   "group": "making"
+  },
+  {
+   "id": "laser-cutting",
+   "words": "laser cutting",
+   "group": "making"
+  },
+  {
+   "id": "product-design",
+   "words": "product design",
+   "group": "making"
+  },
+  {
+   "id": "inventions",
+   "words": "inventions",
+   "group": "making"
+  },
+  {
+   "id": "prototyping",
+   "words": "prototyping",
+   "group": "making"
+  },
+  {
+   "id": "hardware-startups",
+   "words": "hardware startups",
+   "group": "making"
+  },
+  {
+   "id": "repair-skills",
+   "words": "repair skills",
+   "group": "making"
+  },
+  {
+   "id": "bicycle-repair",
+   "words": "bicycle repair",
+   "group": "making"
+  },
+  {
+   "id": "sewing-machines",
+   "words": "sewing machines",
+   "group": "making"
+  },
+  {
+   "id": "restoration-projects",
+   "words": "restoration projects",
+   "group": "making"
+  },
+  {
+   "id": "small-business-marketing",
+   "words": "small business marketing",
+   "group": "business"
+  },
+  {
+   "id": "email-marketing",
+   "words": "email marketing",
+   "group": "business"
+  },
+  {
+   "id": "local-search-marketing",
+   "words": "local search marketing",
+   "group": "business"
+  },
+  {
+   "id": "search-engine-optimization",
+   "words": "search engine optimization",
+   "group": "business"
+  },
+  {
+   "id": "content-marketing",
+   "words": "content marketing",
+   "group": "business"
+  },
+  {
+   "id": "brand-building",
+   "words": "brand building",
+   "group": "business"
+  },
+  {
+   "id": "pricing-strategy",
+   "words": "pricing strategy",
+   "group": "business"
+  },
+  {
+   "id": "business-plans",
+   "words": "business plans",
+   "group": "business"
+  },
+  {
+   "id": "crowdfunding",
+   "words": "crowdfunding",
+   "group": "business"
+  },
+  {
+   "id": "affiliate-marketing",
+   "words": "affiliate marketing",
+   "group": "business"
+  },
+  {
+   "id": "customer-service",
+   "words": "customer service",
+   "group": "business"
+  },
+  {
+   "id": "customer-research",
+   "words": "customer research",
+   "group": "business"
+  },
+  {
+   "id": "market-research",
+   "words": "market research",
+   "group": "business"
+  },
+  {
+   "id": "competitor-research",
+   "words": "competitor research",
+   "group": "business"
+  },
+  {
+   "id": "sales-calls",
+   "words": "sales calls",
+   "group": "business"
+  },
+  {
+   "id": "partnerships",
+   "words": "partnerships",
+   "group": "business"
+  },
+  {
+   "id": "trade-shows",
+   "words": "trade shows",
+   "group": "business"
+  },
+  {
+   "id": "business-networking",
+   "words": "business networking",
+   "group": "business"
+  },
+  {
+   "id": "word-of-mouth",
+   "words": "word of mouth",
+   "group": "business"
+  },
+  {
+   "id": "referral-programs",
+   "words": "referral programs",
+   "group": "business"
+  }
+ ]
+}

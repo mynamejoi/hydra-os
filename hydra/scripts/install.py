@@ -81,13 +81,18 @@ CHAT_STEPS = ("Adding your pages…", "Starting them…")
 CHAT_DONE = "Hydra-OS is set up."
 # what Claude does next, carried by setup's own last lines: the plugin's skills load only in a chat in the Hydra-OS
 # folder, so the chat that runs setup has only these. Claude tells the person in its own words
-CHAT_NEXT = ("Next, tell them you'll move this chat into their Hydra-OS folder, so their pages and you stay together. "
-             "Then move this chat into %s with the Claude app's own folder change, which asks them first, and open "
-             "Home in the Browser pane from %s. Then, in a few short sentences, walk them through it: Home, beside "
-             "the chat, shows their day and their goals, with each of their pages a tap away; they talk to you here, "
-             "in their own words, to ask about or change anything; and it grows with them, as they ask you for new "
-             "plots and new data and add pages from the Shop. Then ask: \"What's one thing you're working toward?\" "
-             "Their answer is their first goal.")
+CHAT_NEXT = ("Next, tell them in a few plain sentences what's now set up: their pages in a Hydra-OS folder on this Mac"
+             " with its own copy of Python; two helpers that start at login to show their pages and keep them fresh; a"
+             " short morning review that uses a little of their Claude plan each day, and a bit more on Mondays, when "
+             "Research looks into their goals; nothing about them sent anywhere; and that Help turns any of it off or "
+             "removes Hydra-OS. Then tell them you'll move this chat into their Hydra-OS folder, so their pages and "
+             "you stay together. Then move this chat into %s with the Claude app's own folder change, which asks them "
+             "first, and open Home in the Browser pane from %s. Then walk them through it, in these words or close to "
+             "them: \"Here's what you have. Home, beside this chat, is your day on one page: your goals at the top, and"
+             " what your pages found below. Research looks into your goals overnight, and each day I'll ask how "
+             "they're going. There's nothing to learn: tell me what you want, in your own words. Ask me for a new "
+             "chart or new data on any page, and the Shop has more pages when you want them.\" Then ask: \"What's one "
+             "thing you're working toward?\" Their answer is their first goal.")
 CHAT_FAILED = ("Tell them that this step didn't finish and that nothing was changed, then offer to try again from "
                "here. On their yes, run this same hydra-setup again.")
 CHAT_SAY_IT = ("Tell them that, in your own words. Once they've renamed it, offer to try again, and on their yes, run "
@@ -126,6 +131,12 @@ def synced(path):
 
 
 def free_port(first):
+    """The first free port from first up, for Home; 0 asks the Mac for any free one, as a test's setup does, so a test
+    never takes Home's own 8792."""
+    if not first:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("127.0.0.1", 0))
+            return s.getsockname()[1]
     for port in range(first, first + 200):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
@@ -394,7 +405,7 @@ class Setup:
         for sub in ("", "hydra", "hydra/panel", "hydra/locks", "hydra/bin", "hydra/store", "hydra/home", "hydra/dreams",
                     "yours", ".claude"):
             files.folder(os.path.join(root, sub))
-        port = self.port or free_port(cfg.FIRST_PORT)
+        port = self.port or (free_port(0) if cfg.test_switches(self.env) else free_port(cfg.FIRST_PORT))
         self.raw = cfg.new(root, self.python, self.claude, self.version, port=port)
         self.shop_setting()
         cfg.write(root, self.raw)

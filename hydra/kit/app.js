@@ -172,6 +172,13 @@
     if (kind === 'words') {
       const inp = $('input', ask), fld = $('.fld', ask), said = $('.said', ask);
       if (!ans.hidden && !said.textContent && keep.get(key)) said.textContent = keep.get(key);
+      /* An app that says what it kept (data-kept: Goals) has its own one line beside Undo, in place of the fixed one,
+         which stays for when it gives none: a bare "Saved." is the server's own word when the app's line can't be
+         shown. Kept for this visit, as the words are. */
+      const sv = $('.sv', ask), first = sv && sv.firstChild && sv.firstChild.nodeType === 3 ? sv.firstChild : null;
+      const fixed = first ? first.nodeValue.trim() : '', keptKey = `hydra-kept:${app}:${id}`;
+      const keptLine = l => { if (first && ask.hasAttribute('data-kept')) first.nodeValue = (l || fixed) + ' '; };
+      if (!ans.hidden && keep.get(keptKey)) keptLine(keep.get(keptKey));
       const save = () => {
         const text = line(inp); if (!text || inp.disabled) return;
         inp.disabled = true; ask.setAttribute('aria-busy', 'true'); flash(msg, '');
@@ -179,13 +186,15 @@
           inp.disabled = false; ask.removeAttribute('aria-busy'); mend(msg, a, app);
           if (!a.ok) { flash(msg, notSaved(a)); inp.focus(); return; }
           keep.set(key, text); remember({ undo: a.undo, at: Date.now() });
-          inp.value = ''; sync(); fld.hidden = true; ans.hidden = false; said.textContent = text; undo.focus();  /* shown, then filled, so its live region says it */
+          const told = ask.hasAttribute('data-kept') ? a.said.replace(/\s+/g, ' ').trim() : '', l = told === 'Saved.' ? '' : told;
+          keep.set(keptKey, l || null);
+          inp.value = ''; sync(); fld.hidden = true; ans.hidden = false; said.textContent = text; keptLine(l); undo.focus();  /* shown, then filled, so its live region says it */
         });
       };
       const sync = field(inp, save);
       undo.addEventListener('click', () => takeBack().then(ok => {
         if (!ok) return;
-        const text = keep.get(key) || ''; keep.set(key, null); remember(null);
+        const text = keep.get(key) || ''; keep.set(key, null); keep.set(keptKey, null); remember(null); keptLine('');
         ans.hidden = true; fld.hidden = false; said.textContent = ''; inp.value = text; inp.dataset.back = '1'; sync(); inp.focus(); flash(msg, 'Put back.', 2000);
       }));
     } else {

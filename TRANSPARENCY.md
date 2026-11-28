@@ -1,6 +1,6 @@
 # What Hydra-OS installs
 
-Everything Hydra-OS puts on your Mac, everything it runs, every address it reaches, and how to remove it. This is Hydra-OS 1.1.0.
+Everything Hydra-OS puts on your Mac, everything it runs, every address it reaches, and how to remove it. This is Hydra-OS 1.2.0.
 
 ## The folder
 
@@ -8,12 +8,12 @@ Everything Hydra-OS keeps is in one folder, `~/Hydra-OS`, readable only by you (
 
 - `hydra/`: Hydra-OS's own files: its settings (`config.json`), the list of your pages (`registry.json`), how each read went (`health.json`), its own store of pages (`hydra/store/`, the copies Claude Code loads), its own Python (`hydra/python/`), the `hydra` command and a few small tools (`hydra/bin/`), its log (`hydra/logs/hydra.log`), Home's page, and the backup it makes before an update.
 - `yours/`: what you chose: your goals, your sources, your settings, and any notes you leave for Claude.
-- A folder for each page, such as `health/` and `goals/`: what that page reads and keeps.
+- A folder for each page, such as `goals/` and `learning/`: what that page reads and keeps.
 - `.claude/`: `settings.json` lets Claude run Hydra-OS's own `hydra` command, and lets the morning review write its answers in `hydra/think/answers/`; `settings.local.json` is Claude Code's own list of the plugins turned on in this folder; `launch.json` lets the Claude app's Browser pane open Home.
 
 ## The plugins
 
-Hydra-OS itself (`hydra`), Goals and Wellbeing are Claude Code plugins, installed at local scope in `~/Hydra-OS`, so they're on only in chats in that folder and off in every other chat. Setup installs them from Hydra-OS's own store, `~/Hydra-OS/hydra/store/`, made from the zip the install checked. The one command adds no plugin list to Claude Code. From then on, every update comes only through `hydra update`, and only once its signature checks out (The signing key, below). A page you add later from Home's Shop is installed the same way.
+Hydra-OS itself (`hydra`), Goals and Research are Claude Code plugins, installed at local scope in `~/Hydra-OS`, so they're on only in chats in that folder and off in every other chat. Setup installs them from Hydra-OS's own store, `~/Hydra-OS/hydra/store/`, made from the zip the install checked. The one command adds no plugin list to Claude Code. From then on, every update comes only through `hydra update`, and only once its signature checks out (The signing key, below). A page you add later from Home's Shop is installed the same way.
 
 ## The two background helpers
 
@@ -40,7 +40,7 @@ Hydra-OS itself:
 - **PostToolUse on WebSearch** (`hooks/review_keep.py`): only while the morning review runs, each search a page listed keeps its answer for that page.
 - **SessionEnd** (`hooks/session_end.py`): the morning review's fence lifts when its chat ends; with the helpers off, Home's server stops after the last Hydra-OS chat.
 
-Goals and Wellbeing have no hooks. Of the pages you can add later, Research and Content have none. Finance has one: before a connector tool runs, it refuses every brokerage, bank or card tool that isn't one of Finance's listed reads, any tool it doesn't know whose name carries a money word, and every tool it doesn't know on a connector it has seen carry a Robinhood or Monarch tool. It notes those connectors' ids in Finance's own folder, `lock/servers.json`, and nowhere else. People and Inbox each have a lock on connector tools: only Gmail's and Google Calendar's reading tools pass, and each answer is cut down to what the page uses before Claude sees it. If Hydra-OS's own Python is ever missing, that lock refuses every connector tool in a Hydra-OS chat, and says so, since a tool's name alone can't show it's only a read. Each page's own README says more.
+Goals and Research have no hooks. Of the pages you can add later, Wellbeing and Content have none. Finance has one: before a connector tool runs, it refuses every brokerage, bank or card tool that isn't one of Finance's listed reads, any tool it doesn't know whose name carries a money word, and every tool it doesn't know on a connector it has seen carry a Robinhood or Monarch tool. It notes those connectors' ids in Finance's own folder, `lock/servers.json`, and nowhere else. People and Inbox each have a lock on connector tools: only Gmail's and Google Calendar's reading tools pass, and each answer is cut down to what the page uses before Claude sees it. If Hydra-OS's own Python is ever missing, that lock refuses every connector tool in a Hydra-OS chat, and says so, since a tool's name alone can't show it's only a read. Each page's own README says more.
 
 ## Every address it reaches
 
@@ -55,6 +55,8 @@ Hydra-OS's own code reaches only these:
 - **The hydra-<version>.zip file,** Hydra-OS itself. The README's one command fetches `catalog.json` and its signature, `catalog.json.sig`, checks the signature with the Mac's own `/usr/bin/openssl` against the public key written out in the command (The signing key, below), then fetches the zip the catalog names and checks it against the sha256 the catalog gives, before it's unpacked with the Mac's own `ditto`. `hydra update` fetches a newer one the same way, for a folder already set up, keeps a backup, and puts everything back if a step fails.
 - **Its own Python,** CPython 3.12.16, the `install_only` build of Astral's python-build-standalone for your Mac's chip, release 20261124, from `https://github.com/astral-sh/python-build-standalone/releases/tag/20261124`. `hydra-setup` fetches it with the Mac's own `curl` and checks it against the sha256 Astral publishes for it in that release's `SHA256SUMS`, `https://github.com/astral-sh/python-build-standalone/releases/download/20261124/SHA256SUMS`, written in the zip's `scripts/python.pins`, before anything is unpacked. It runs with its signatures as Astral made them: on Apple chips each of its programs is signed and verifies as shipped, and on Intel they're unsigned, as Intel allows. If it doesn't start, setup says so in one line and uses nothing. It's kept in `~/Hydra-OS/hydra/python/`, and every hook, helper and `hydra` command runs on it.
 
+**An update to a folder an older Hydra-OS set up on the Mac's own `python3`** fetches Hydra-OS's own Python the same way, from the same pinned address, checked by the same sha256 before it's unpacked, keeps it in `~/Hydra-OS/hydra/python/`, and moves the folder onto it. If any step of the update fails, everything is put back as it was.
+
 Nothing Hydra-OS runs uses `git`, Apple's developer tools or the Mac's own `python3`: a Mac with the Claude app alone is enough.
 
 **The .pack files.** Each is a paid page, sealed. Hydra-OS opens one only when you add that page from Home's Shop, with the key on your receipt, and only once its sha256 matches the signed catalog. Until then, nothing reads it.
@@ -63,7 +65,7 @@ Claude reaches your own services only in your chats and in the morning review: t
 
 ## The morning review
 
-On from setup, as the install's one sentence says: in your first chat, Claude makes a scheduled task in the Claude app, "Hydra-OS morning review", daily at 07:40, whose whole prompt is "Run hydra think and follow what it prints. If there's no hydra command here, delete this scheduled task with your scheduled-task tool, then stop." It uses a little of your Claude plan each morning, in `~/Hydra-OS`, under the fence above. Turn it off on Help, and at its next run it deletes itself; remove Hydra-OS, and it does the same. You can pause or delete it in the Claude app, any time.
+On from setup, as the install's one sentence says: in your first chat, Claude makes a scheduled task in the Claude app, "Hydra-OS morning review", daily at 07:40, whose whole prompt is "Run hydra think and follow what it prints. If there's no hydra command here, delete this scheduled task with your scheduled-task tool, then stop." It uses a little of your Claude plan each day, and a bit more on Mondays, when Research looks into your goals, in `~/Hydra-OS`, under the fence above. Turn it off on Help, and at its next run it deletes itself; remove Hydra-OS, and it does the same. You can pause or delete it in the Claude app, any time.
 
 ## No telemetry
 
